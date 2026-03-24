@@ -106,35 +106,36 @@ export default function DashboardPage() {
   });
   setOrders(userOrders);
 
-  // Fetch withdrawal history
-  // Fetch withdrawal history
+// Fetch withdrawal history
 const withdrawalsQuery = query(
   collection(db, 'withdrawals'),
   where('userId', '==', user.uid),
   orderBy('requestedAt', 'desc')
 );
-const withdrawalsSnapshot = await getDocs(withdrawalsQuery);
-const withdrawalData: Withdrawal[] = [];
 
-withdrawalsSnapshot.forEach(doc => {
-  const data = doc.data();
-  withdrawalData.push({
+const withdrawalsSnapshot = await getDocs(withdrawalsQuery);
+
+// ✅ FORCE correct typing
+const withdrawalData: Withdrawal[] = withdrawalsSnapshot.docs.map((doc) => {
+  const data = doc.data() as Partial<Withdrawal>;
+
+  return {
     id: doc.id,
-    amount: data.amount || 0,
-    status: data.status || 'pending',
-    fee: data.fee || 0,
+    amount: data.amount ?? 0,
+    status: data.status ?? 'pending',
+    fee: data.fee ?? 0,
     requestedAt: data.requestedAt,
     paidAt: data.paidAt
-  });
+  };
 });
 
 setWithdrawals(withdrawalData);
 
-// Calculate pending withdrawal amount
-let pending = 0;
-withdrawalData.forEach((w) => {
-  if (w.status === 'pending') pending += w.amount;
-});
+// ✅ Calculate pending withdrawal safely
+const pending = withdrawalData.reduce((sum, w) => {
+  return w.status === 'pending' ? sum + w.amount : sum;
+}, 0);
+
 setPendingWithdrawal(pending);
   // Fetch products
   const productsSnapshot = await getDocs(collection(db, 'products'));
@@ -173,18 +174,24 @@ setPendingWithdrawal(pending);
   }, [router, searchParams]);
 
   const getProductReferralLink = (productId: string) => {
-    if (!referralCode) return `${window.location.origin}/product/${productId}`;
-    return `${window.location.origin}/product/${productId}?ref=${referralCode}`;
-  };
+  if (typeof window === 'undefined') return '';
 
+  if (!referralCode) return `${window.location.origin}/product/${productId}`;
+  return `${window.location.origin}/product/${productId}?ref=${referralCode}`;
+};
   const copyProductLink = () => {
-    if (!selectedProduct) return;
-    const link = getProductReferralLink(selectedProduct);
+  if (!selectedProduct) return;
+
+  const link = getProductReferralLink(selectedProduct);
+
+  if (typeof navigator !== 'undefined') {
     navigator.clipboard.writeText(link);
-    setProductLinkCopied(true);
-    setTimeout(() => setProductLinkCopied(false), 2000);
-    alert('✅ Link copied!');
-  };
+  }
+
+  setProductLinkCopied(true);
+  setTimeout(() => setProductLinkCopied(false), 2000);
+  alert('✅ Link copied!');
+};
 
   const selectedProductData = products.find(p => p.id === selectedProduct);
 
