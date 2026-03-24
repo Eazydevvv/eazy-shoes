@@ -107,33 +107,33 @@ export default function DashboardPage() {
   setOrders(userOrders);
 
   // Fetch withdrawal history
-  const withdrawalsQuery = query(
-    collection(db, 'withdrawals'),
-    where('userId', '==', user.uid),
-    orderBy('requestedAt', 'desc')
-  );
-  const withdrawalsSnapshot = await getDocs(withdrawalsQuery);
-  const withdrawalData: Withdrawal[] = [];
-  withdrawalsSnapshot.forEach(doc => {
-    const data = doc.data();
-    withdrawalData.push({
-      id: doc.id,
-      amount: data.amount || 0,
-      status: data.status || 'pending',
-      fee: data.fee || 0,
-      requestedAt: data.requestedAt,
-      paidAt: data.paidAt
-    });
+  // Fetch withdrawal history
+const withdrawalsQuery = query(
+  collection(db, 'withdrawals'),
+  where('userId', '==', user.uid),
+  orderBy('requestedAt', 'desc')
+);
+const withdrawalsSnapshot = await getDocs(withdrawalsQuery);
+const withdrawalData: any[] = [];
+withdrawalsSnapshot.forEach(doc => {
+  const data = doc.data();
+  withdrawalData.push({
+    id: doc.id,
+    amount: data.amount || 0,
+    status: data.status || 'pending',
+    fee: data.fee || 0,
+    requestedAt: data.requestedAt,
+    paidAt: data.paidAt
   });
-  setWithdrawals(withdrawalData);
-  
-  // Calculate pending withdrawal amount
-  let pending = 0;
-  withdrawalData.forEach(w => {
-    if (w.status === 'pending') pending += w.amount;
-  });
-  setPendingWithdrawal(pending);
+});
+setWithdrawals(withdrawalData);
 
+// Calculate pending withdrawal amount
+let pending = 0;
+withdrawalData.forEach((w: any) => {
+  if (w.status === 'pending') pending += w.amount;
+});
+setPendingWithdrawal(pending);
   // Fetch products
   const productsSnapshot = await getDocs(collection(db, 'products'));
   const productsData: Product[] = [];
