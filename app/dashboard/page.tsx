@@ -51,107 +51,102 @@ export default function DashboardPage() {
   const [showWithdrawalHistory, setShowWithdrawalHistory] = useState(false);
 
   const fetchUserData = async (user: any) => {
-  // Get user's referral code and data
-  const userDoc = await getDoc(doc(db, 'users', user.uid));
-  
-  if (userDoc.exists()) {
-    const userData = userDoc.data();
-    let currentReferralCode = userData.referralCode;
+    // Get user's referral code and data
+    const userDoc = await getDoc(doc(db, 'users', user.uid));
     
-    if (!currentReferralCode) {
-      const newReferralCode = user.uid.slice(0, 6).toUpperCase();
-      await updateDoc(doc(db, 'users', user.uid), {
-        referralCode: newReferralCode,
-        totalEarnings: 0,
-        totalReferrals: 0
-      });
-      currentReferralCode = newReferralCode;
+    if (userDoc.exists()) {
+      const userData = userDoc.data();
+      let currentReferralCode = userData.referralCode;
+      
+      if (!currentReferralCode) {
+        const newReferralCode = user.uid.slice(0, 6).toUpperCase();
+        await updateDoc(doc(db, 'users', user.uid), {
+          referralCode: newReferralCode,
+          totalEarnings: 0,
+          totalReferrals: 0
+        });
+        currentReferralCode = newReferralCode;
+      }
+      
+      setReferralCode(currentReferralCode);
+      
+      // READ BALANCE FROM USER DOCUMENT
+      const currentBalance = userData.totalEarnings || 0;
+      setTotalEarnings(currentBalance);
+      
+      // Get referral count
+      const referredOrdersQuery = query(
+        collection(db, 'orders'),
+        where('referralCode', '==', currentReferralCode),
+        orderBy('createdAt', 'desc')
+      );
+      const referredOrdersSnapshot = await getDocs(referredOrdersQuery);
+      setReferralCount(referredOrdersSnapshot.size);
     }
-    
-    setReferralCode(currentReferralCode);
-    
-    // READ BALANCE FROM USER DOCUMENT
-    const currentBalance = userData.totalEarnings || 0;
-    setTotalEarnings(currentBalance);
-    
-    // Get referral count
-    const referredOrdersQuery = query(
+
+    // Fetch user's own orders
+    const ordersQuery = query(
       collection(db, 'orders'),
-      where('referralCode', '==', currentReferralCode),
-      orderBy('createdAt', 'desc')
+      where('userId', '==', user.uid),
+      orderBy('createdAt', 'desc'),
+      limit(5)
     );
-    const referredOrdersSnapshot = await getDocs(referredOrdersQuery);
-    setReferralCount(referredOrdersSnapshot.size);
-  }
-
-  // Fetch user's own orders
-  const ordersQuery = query(
-    collection(db, 'orders'),
-    where('userId', '==', user.uid),
-    orderBy('createdAt', 'desc'),
-    limit(5)
-  );
-  const ordersSnapshot = await getDocs(ordersQuery);
-  const userOrders: Order[] = [];
-  ordersSnapshot.forEach(doc => {
-    const data = doc.data();
-    userOrders.push({
-      id: doc.id,
-      orderReference: data.orderReference,
-      totalAmount: data.totalAmount || 0,
-      status: data.status || 'pending',
-      products: data.products || [],
-      createdAt: data.createdAt
+    const ordersSnapshot = await getDocs(ordersQuery);
+    const userOrders: Order[] = [];
+    ordersSnapshot.forEach(doc => {
+      const data = doc.data();
+      userOrders.push({
+        id: doc.id,
+        orderReference: data.orderReference,
+        totalAmount: data.totalAmount || 0,
+        status: data.status || 'pending',
+        products: data.products || [],
+        createdAt: data.createdAt
+      });
     });
-  });
-  setOrders(userOrders);
+    setOrders(userOrders);
 
-// Fetch withdrawal history
-const withdrawalsQuery = query(
-  collection(db, 'withdrawals'),
-  where('userId', '==', user.uid),
-  orderBy('requestedAt', 'desc')
-);
+    // Fetch withdrawal history
+    const withdrawalsQuery = query(
+      collection(db, 'withdrawals'),
+      where('userId', '==', user.uid),
+      orderBy('requestedAt', 'desc')
+    );
+    const withdrawalsSnapshot = await getDocs(withdrawalsQuery);
+    const withdrawalData: Withdrawal[] = withdrawalsSnapshot.docs.map((doc) => {
+      const data = doc.data() as Partial<Withdrawal>;
+      return {
+        id: doc.id,
+        amount: data.amount ?? 0,
+        status: data.status ?? 'pending',
+        fee: data.fee ?? 0,
+        requestedAt: data.requestedAt,
+        paidAt: data.paidAt
+      };
+    });
+    setWithdrawals(withdrawalData);
 
-const withdrawalsSnapshot = await getDocs(withdrawalsQuery);
-
-// ✅ FORCE correct typing
-const withdrawalData: Withdrawal[] = withdrawalsSnapshot.docs.map((doc) => {
-  const data = doc.data() as Partial<Withdrawal>;
-
-  return {
-    id: doc.id,
-    amount: data.amount ?? 0,
-    status: data.status ?? 'pending',
-    fee: data.fee ?? 0,
-    requestedAt: data.requestedAt,
-    paidAt: data.paidAt
+    // Calculate pending withdrawal safely
+    const pending = withdrawalData.reduce((sum, w) => {
+      return w.status === 'pending' ? sum + w.amount : sum;
+    }, 0);
+    setPendingWithdrawal(pending);
+    
+    // Fetch products
+    const productsSnapshot = await getDocs(collection(db, 'products'));
+    const productsData: Product[] = [];
+    productsSnapshot.forEach(doc => {
+      const data = doc.data();
+      productsData.push({
+        id: doc.id,
+        name: data.name || '',
+        price: data.price || 0,
+        brand: data.brand,
+        images: data.images || []
+      });
+    });
+    setProducts(productsData);
   };
-});
-
-setWithdrawals(withdrawalData);
-
-// ✅ Calculate pending withdrawal safely
-const pending = withdrawalData.reduce((sum, w) => {
-  return w.status === 'pending' ? sum + w.amount : sum;
-}, 0);
-
-setPendingWithdrawal(pending);
-  // Fetch products
-  const productsSnapshot = await getDocs(collection(db, 'products'));
-  const productsData: Product[] = [];
-  productsSnapshot.forEach(doc => {
-    const data = doc.data();
-    productsData.push({
-      id: doc.id,
-      name: data.name || '',
-      price: data.price || 0,
-      brand: data.brand,
-      images: data.images || []
-    });
-  });
-  setProducts(productsData);
-};
 
   useEffect(() => {
     const refresh = searchParams.get('refresh');
@@ -174,24 +169,21 @@ setPendingWithdrawal(pending);
   }, [router, searchParams]);
 
   const getProductReferralLink = (productId: string) => {
-  if (typeof window === 'undefined') return '';
+    if (typeof window === 'undefined') return '';
+    if (!referralCode) return `${window.location.origin}/product/${productId}`;
+    return `${window.location.origin}/product/${productId}?ref=${referralCode}`;
+  };
 
-  if (!referralCode) return `${window.location.origin}/product/${productId}`;
-  return `${window.location.origin}/product/${productId}?ref=${referralCode}`;
-};
   const copyProductLink = () => {
-  if (!selectedProduct) return;
-
-  const link = getProductReferralLink(selectedProduct);
-
-  if (typeof navigator !== 'undefined') {
-    navigator.clipboard.writeText(link);
-  }
-
-  setProductLinkCopied(true);
-  setTimeout(() => setProductLinkCopied(false), 2000);
-  alert('✅ Link copied!');
-};
+    if (!selectedProduct) return;
+    const link = getProductReferralLink(selectedProduct);
+    if (typeof navigator !== 'undefined') {
+      navigator.clipboard.writeText(link);
+    }
+    setProductLinkCopied(true);
+    setTimeout(() => setProductLinkCopied(false), 2000);
+    alert('✅ Link copied!');
+  };
 
   const selectedProductData = products.find(p => p.id === selectedProduct);
 
@@ -328,7 +320,7 @@ setPendingWithdrawal(pending);
                   <div key={`${w.id}-${idx}`} className="flex justify-between items-center p-4 border border-gray-100 rounded-xl">
                     <div>
                       <p className="font-semibold">₦{w.amount.toLocaleString()}</p>
-                      {w.fee && <p className="text-xs text-gray-400">Fee: ₦{w.fee}</p>}
+                      {w.fee && w.fee > 0 && <p className="text-xs text-gray-400">Fee: ₦{w.fee}</p>}
                       <p className="text-sm text-gray-500">
                         {w.requestedAt?.toDate ? new Date(w.requestedAt.toDate()).toLocaleDateString() : 'Just now'}
                       </p>
