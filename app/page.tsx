@@ -18,6 +18,7 @@ interface Product {
   featured?: boolean;
 }
 
+
 export default function Home() {
   const router = useRouter();
   const [products, setProducts] = useState<Product[]>([]);
