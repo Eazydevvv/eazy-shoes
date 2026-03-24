@@ -114,7 +114,8 @@ const withdrawalsQuery = query(
   orderBy('requestedAt', 'desc')
 );
 const withdrawalsSnapshot = await getDocs(withdrawalsQuery);
-const withdrawalData: any[] = [];
+const withdrawalData: Withdrawal[] = [];
+
 withdrawalsSnapshot.forEach(doc => {
   const data = doc.data();
   withdrawalData.push({
@@ -126,11 +127,12 @@ withdrawalsSnapshot.forEach(doc => {
     paidAt: data.paidAt
   });
 });
+
 setWithdrawals(withdrawalData);
 
 // Calculate pending withdrawal amount
 let pending = 0;
-withdrawalData.forEach((w: any) => {
+withdrawalData.forEach((w) => {
   if (w.status === 'pending') pending += w.amount;
 });
 setPendingWithdrawal(pending);
