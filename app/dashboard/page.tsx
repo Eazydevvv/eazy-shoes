@@ -86,7 +86,7 @@ export default function DashboardPage() {
       orderBy('requestedAt', 'desc')
     );
     const withdrawalsSnapshot = await getDocs(withdrawalsQuery);
-    const withdrawalData = withdrawalsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+const withdrawalData = withdrawalsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as any[];
     setWithdrawals(withdrawalData);
     
     // Calculate pending withdrawal amount
