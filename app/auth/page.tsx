@@ -8,7 +8,6 @@ import { auth } from '@/lib/firebase/config';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
 import { createUserProfile } from '@/lib/firebase/users';
 
-// Main auth component that uses useSearchParams
 function AuthContent() {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
@@ -65,7 +64,6 @@ function AuthContent() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full">
-        {/* Header */}
         <div className="text-center mb-8">
           <div className="flex justify-center mb-4">
             <div className="w-24 h-24 bg-gradient-to-br from-black to-gray-700 rounded-2xl rotate-45 transform hover:rotate-0 transition-all duration-500 shadow-xl flex items-center justify-center">
@@ -78,9 +76,7 @@ function AuthContent() {
           </p>
         </div>
 
-        {/* Auth Card */}
         <div className="bg-white/80 backdrop-blur-lg rounded-3xl shadow-2xl p-8 border border-gray-100">
-          {/* Toggle Buttons */}
           <div className="flex bg-gray-100 p-1 rounded-2xl mb-8">
             <button
               onClick={() => setIsLogin(true)}
@@ -100,7 +96,6 @@ function AuthContent() {
             </button>
           </div>
 
-          {/* Error/Success Messages */}
           {error && (
             <div className="mb-6 bg-red-50 border-l-4 border-red-500 p-4 rounded-lg">
               <p className="text-sm text-red-600">{error}</p>
@@ -112,7 +107,6 @@ function AuthContent() {
             </div>
           )}
 
-          {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
@@ -165,7 +159,6 @@ function AuthContent() {
   );
 }
 
-// Export with Suspense boundary
 export default function AuthPage() {
   return (
     <Suspense fallback={
