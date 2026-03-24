@@ -51,77 +51,104 @@ export default function DashboardPage() {
   const [showWithdrawalHistory, setShowWithdrawalHistory] = useState(false);
 
   const fetchUserData = async (user: any) => {
-    // Get user's referral code and data
-    const userDoc = await getDoc(doc(db, 'users', user.uid));
+  // Get user's referral code and data
+  const userDoc = await getDoc(doc(db, 'users', user.uid));
+  
+  if (userDoc.exists()) {
+    const userData = userDoc.data();
+    let currentReferralCode = userData.referralCode;
     
-    if (userDoc.exists()) {
-      const userData = userDoc.data();
-      let currentReferralCode = userData.referralCode;
-      
-      if (!currentReferralCode) {
-        const newReferralCode = user.uid.slice(0, 6).toUpperCase();
-        await updateDoc(doc(db, 'users', user.uid), {
-          referralCode: newReferralCode,
-          totalEarnings: 0,
-          totalReferrals: 0
-        });
-        currentReferralCode = newReferralCode;
-      }
-      
-      setReferralCode(currentReferralCode);
-      
-      // READ BALANCE FROM USER DOCUMENT
-      const currentBalance = userData.totalEarnings || 0;
-      setTotalEarnings(currentBalance);
-      
-      // Get referral count
-      const referredOrdersQuery = query(
-        collection(db, 'orders'),
-        where('referralCode', '==', currentReferralCode),
-        orderBy('createdAt', 'desc')
-      );
-      const referredOrdersSnapshot = await getDocs(referredOrdersQuery);
-      setReferralCount(referredOrdersSnapshot.size);
+    if (!currentReferralCode) {
+      const newReferralCode = user.uid.slice(0, 6).toUpperCase();
+      await updateDoc(doc(db, 'users', user.uid), {
+        referralCode: newReferralCode,
+        totalEarnings: 0,
+        totalReferrals: 0
+      });
+      currentReferralCode = newReferralCode;
     }
-
-    // Fetch user's own orders
-    const ordersQuery = query(
-      collection(db, 'orders'),
-      where('userId', '==', user.uid),
-      orderBy('createdAt', 'desc'),
-      limit(5)
-    );
-    const ordersSnapshot = await getDocs(ordersQuery);
-    const userOrders = ordersSnapshot.docs.map(doc => ({ 
-      id: doc.id, 
-      ...doc.data() 
-    })) as Order[];
-    setOrders(userOrders);
-
-    // Fetch withdrawal history
-    const withdrawalsQuery = query(
-      collection(db, 'withdrawals'),
-      where('userId', '==', user.uid),
-      orderBy('requestedAt', 'desc')
-    );
-    const withdrawalsSnapshot = await getDocs(withdrawalsQuery);
-    const withdrawalData = withdrawalsSnapshot.docs.map(doc => ({ 
-      id: doc.id, 
-      ...doc.data() 
-    })) as Withdrawal[];
-    setWithdrawals(withdrawalData);
     
-    // Calculate pending withdrawal amount
-    let pending = 0;
-    withdrawalData.forEach(w => {
-      if (w.status === 'pending') pending += w.amount;
-    });
-    setPendingWithdrawal(pending);
+    setReferralCode(currentReferralCode);
+    
+    // READ BALANCE FROM USER DOCUMENT
+    const currentBalance = userData.totalEarnings || 0;
+    setTotalEarnings(currentBalance);
+    
+    // Get referral count
+    const referredOrdersQuery = query(
+      collection(db, 'orders'),
+      where('referralCode', '==', currentReferralCode),
+      orderBy('createdAt', 'desc')
+    );
+    const referredOrdersSnapshot = await getDocs(referredOrdersQuery);
+    setReferralCount(referredOrdersSnapshot.size);
+  }
 
-    // Fetch products
-    const productsSnapshot = await getDocs(collection(db, 'products'));
-    setProducts(productsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Product[]);
-  };
+  // Fetch user's own orders
+  const ordersQuery = query(
+    collection(db, 'orders'),
+    where('userId', '==', user.uid),
+    orderBy('createdAt', 'desc'),
+    limit(5)
+  );
+  const ordersSnapshot = await getDocs(ordersQuery);
+  const userOrders: Order[] = [];
+  ordersSnapshot.forEach(doc => {
+    const data = doc.data();
+    userOrders.push({
+      id: doc.id,
+      orderReference: data.orderReference,
+      totalAmount: data.totalAmount || 0,
+      status: data.status || 'pending',
+      products: data.products || [],
+      createdAt: data.createdAt
+    });
+  });
+  setOrders(userOrders);
+
+  // Fetch withdrawal history
+  const withdrawalsQuery = query(
+    collection(db, 'withdrawals'),
+    where('userId', '==', user.uid),
+    orderBy('requestedAt', 'desc')
+  );
+  const withdrawalsSnapshot = await getDocs(withdrawalsQuery);
+  const withdrawalData: Withdrawal[] = [];
+  withdrawalsSnapshot.forEach(doc => {
+    const data = doc.data();
+    withdrawalData.push({
+      id: doc.id,
+      amount: data.amount || 0,
+      status: data.status || 'pending',
+      fee: data.fee || 0,
+      requestedAt: data.requestedAt,
+      paidAt: data.paidAt
+    });
+  });
+  setWithdrawals(withdrawalData);
+  
+  // Calculate pending withdrawal amount
+  let pending = 0;
+  withdrawalData.forEach(w => {
+    if (w.status === 'pending') pending += w.amount;
+  });
+  setPendingWithdrawal(pending);
+
+  // Fetch products
+  const productsSnapshot = await getDocs(collection(db, 'products'));
+  const productsData: Product[] = [];
+  productsSnapshot.forEach(doc => {
+    const data = doc.data();
+    productsData.push({
+      id: doc.id,
+      name: data.name || '',
+      price: data.price || 0,
+      brand: data.brand,
+      images: data.images || []
+    });
+  });
+  setProducts(productsData);
+};
 
   useEffect(() => {
     const refresh = searchParams.get('refresh');
