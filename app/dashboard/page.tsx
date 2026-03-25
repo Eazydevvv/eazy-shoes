@@ -1,5 +1,6 @@
 'use client';
 
+import { Suspense } from 'react';
 import { useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { auth, db } from '@/lib/firebase/config';
@@ -24,7 +25,7 @@ interface Order {
   createdAt?: any;
 }
 
-export default function DashboardPage() {
+function DashboardContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   
@@ -42,7 +43,6 @@ export default function DashboardPage() {
   const [showWithdrawalHistory, setShowWithdrawalHistory] = useState(false);
 
   const fetchUserData = async (user: any) => {
-    // Get user's referral code and data
     const userDoc = await getDoc(doc(db, 'users', user.uid));
     
     if (userDoc.exists()) {
@@ -60,12 +60,9 @@ export default function DashboardPage() {
       }
       
       setReferralCode(currentReferralCode);
-      
-      // READ BALANCE FROM USER DOCUMENT
       const currentBalance = userData.totalEarnings || 0;
       setTotalEarnings(currentBalance);
       
-      // Get referral count
       const referredOrdersQuery = query(
         collection(db, 'orders'),
         where('referralCode', '==', currentReferralCode),
@@ -75,7 +72,6 @@ export default function DashboardPage() {
       setReferralCount(referredOrdersSnapshot.size);
     }
 
-    // Fetch user's own orders
     const ordersQuery = query(
       collection(db, 'orders'),
       where('userId', '==', user.uid),
@@ -97,7 +93,6 @@ export default function DashboardPage() {
     });
     setOrders(userOrders);
 
-    // Fetch withdrawal history
     const withdrawalsQuery = query(
       collection(db, 'withdrawals'),
       where('userId', '==', user.uid),
@@ -119,7 +114,6 @@ export default function DashboardPage() {
     });
     setWithdrawals(withdrawalData);
 
-    // Calculate pending withdrawal amount
     let pending = 0;
     for (let i = 0; i < withdrawalData.length; i++) {
       if (withdrawalData[i].status === 'pending') {
@@ -128,7 +122,6 @@ export default function DashboardPage() {
     }
     setPendingWithdrawal(pending);
 
-    // Fetch products
     const productsSnapshot = await getDocs(collection(db, 'products'));
     const productsData: Product[] = [];
     productsSnapshot.forEach(doc => {
@@ -415,5 +408,17 @@ export default function DashboardPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+export default function DashboardPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-black"></div>
+      </div>
+    }>
+      <DashboardContent />
+    </Suspense>
   );
 }
