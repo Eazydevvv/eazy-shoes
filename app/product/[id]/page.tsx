@@ -9,6 +9,7 @@ import { onAuthStateChanged } from 'firebase/auth';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useCart } from '@/context/CartContext';
+import { Suspense } from 'react';
 
 interface Product {
     id: string;
@@ -26,7 +27,7 @@ interface Product {
     reviews: number;
 }
 
-export default function ProductPage() {
+function ProductContent() {
     const params = useParams();
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -418,4 +419,11 @@ export default function ProductPage() {
             </div>
         </main>
     );
+}
+export default function ProductPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-black"></div></div>}>
+      <ProductContent />
+    </Suspense>
+  );
 }

@@ -7,6 +7,7 @@ import { collection, getDocs } from 'firebase/firestore';
 import ProductCard from '@/components/ui/ProductCard';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { Suspense } from 'react';
 
 interface Product {
   id: string;
@@ -19,7 +20,7 @@ interface Product {
   inStock?: boolean;
 }
 
-export default function ProductsPage() {
+function ProductsContent() {
   const searchParams = useSearchParams();
   const categoryFilter = searchParams.get('category');
   
@@ -125,5 +126,13 @@ export default function ProductsPage() {
         )}
       </div>
     </main>
+  );
+}
+
+export default function ProductsPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-black"></div></div>}>
+      <ProductsContent />
+    </Suspense>
   );
 }
