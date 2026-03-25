@@ -1,11 +1,11 @@
-// app/products/page.tsx
 'use client';
 
+import { Suspense } from 'react';
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { db } from '@/lib/firebase/config';
 import { collection, getDocs } from 'firebase/firestore';
 import ProductCard from '@/components/ui/ProductCard';
-import { useSearchParams } from 'next/navigation';
 
 interface Product {
   id: string;
@@ -18,7 +18,7 @@ interface Product {
   inStock?: boolean;
 }
 
-export default function ProductsPage() {
+function ProductsContent() {
   const searchParams = useSearchParams();
   const categoryFilter = searchParams.get('category');
   
@@ -39,11 +39,9 @@ export default function ProductsPage() {
         
         setProducts(productsData);
         
-        // Extract unique categories
         const uniqueCategories = ['all', ...new Set(productsData.map(p => p.category).filter(Boolean))];
         setCategories(uniqueCategories);
         
-        // Apply filter
         if (categoryFilter && categoryFilter !== 'all') {
           setSelectedCategory(categoryFilter);
           setFilteredProducts(productsData.filter(p => p.category?.toLowerCase() === categoryFilter?.toLowerCase()));
@@ -80,7 +78,6 @@ export default function ProductsPage() {
   return (
     <main className="min-h-screen bg-gradient-to-b from-gray-50 to-white py-12">
       <div className="container mx-auto px-4">
-        {/* Header */}
         <div className="text-center mb-12">
           <h1 className="text-5xl font-black mb-4">All Products</h1>
           <p className="text-gray-600 max-w-2xl mx-auto">
@@ -88,7 +85,6 @@ export default function ProductsPage() {
           </p>
         </div>
 
-        {/* Category Filter */}
         <div className="flex flex-wrap justify-center gap-3 mb-12">
           {categories.map((category) => (
             <button
@@ -105,7 +101,6 @@ export default function ProductsPage() {
           ))}
         </div>
 
-        {/* Products Grid */}
         {filteredProducts.length === 0 ? (
           <div className="text-center py-20">
             <p className="text-gray-500 text-lg">No products found in this category.</p>
@@ -119,5 +114,17 @@ export default function ProductsPage() {
         )}
       </div>
     </main>
+  );
+}
+
+export default function ProductsPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-black"></div>
+      </div>
+    }>
+      <ProductsContent />
+    </Suspense>
   );
 }
