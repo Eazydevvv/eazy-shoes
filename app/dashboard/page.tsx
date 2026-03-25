@@ -15,14 +15,7 @@ interface Product {
   images?: string[];
 }
 
-interface Withdrawal {
-  id: string;
-  amount: number;
-  status: string;
-  fee?: number;
-  requestedAt?: any;
-  paidAt?: any;
-}
+
 
 interface Order {
   id: string;
@@ -47,7 +40,7 @@ export default function DashboardPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<string>('');
   const [productLinkCopied, setProductLinkCopied] = useState(false);
-  const [withdrawals, setWithdrawals] = useState<Withdrawal[]>([]);
+const [withdrawals, setWithdrawals] = useState<any[]>([]);
   const [showWithdrawalHistory, setShowWithdrawalHistory] = useState(false);
 
   const fetchUserData = async (user: any) => {
@@ -107,31 +100,33 @@ export default function DashboardPage() {
     setOrders(userOrders);
 
     // Fetch withdrawal history
-    const withdrawalsQuery = query(
-      collection(db, 'withdrawals'),
-      where('userId', '==', user.uid),
-      orderBy('requestedAt', 'desc')
-    );
-    const withdrawalsSnapshot = await getDocs(withdrawalsQuery);
-    const withdrawalData: Withdrawal[] = withdrawalsSnapshot.docs.map((doc) => {
-      const data = doc.data() as Partial<Withdrawal>;
-      return {
-        id: doc.id,
-        amount: data.amount ?? 0,
-        status: data.status ?? 'pending',
-        fee: data.fee ?? 0,
-        requestedAt: data.requestedAt,
-        paidAt: data.paidAt
-      };
-    });
-    setWithdrawals(withdrawalData);
+const withdrawalsQuery = query(
+  collection(db, 'withdrawals'),
+  where('userId', '==', user.uid),
+  orderBy('requestedAt', 'desc')
+);
 
-    // Calculate pending withdrawal safely
-    const pending = withdrawalData.reduce((sum, w) => {
-      return w.status === 'pending' ? sum + w.amount : sum;
-    }, 0);
-    setPendingWithdrawal(pending);
-    
+const withdrawalsSnapshot = await getDocs(withdrawalsQuery);
+const withdrawalData: any[] = [];
+withdrawalsSnapshot.forEach(doc => {
+  const data = doc.data();
+  withdrawalData.push({
+    id: doc.id,
+    amount: data.amount || 0,
+    status: data.status || 'pending',
+    fee: data.fee || 0,
+    requestedAt: data.requestedAt,
+    paidAt: data.paidAt
+  });
+});
+setWithdrawals(withdrawalData);
+
+// Calculate pending withdrawal amount
+let pending = 0;
+withdrawalData.forEach((w: any) => {
+  if (w.status === 'pending') pending += w.amount;
+});
+setPendingWithdrawal(pending);
     // Fetch products
     const productsSnapshot = await getDocs(collection(db, 'products'));
     const productsData: Product[] = [];
