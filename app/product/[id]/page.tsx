@@ -134,8 +134,8 @@ export default function ProductPage() {
             productName: product.name,
             price: product.price,
             quantity: quantity,
-            size: selectedSize,
-            color: selectedColor,
+            size: selectedSize !== null ? selectedSize : undefined,
+            color: selectedColor !== null ? selectedColor : undefined,
             image: product.images?.[0] || ''
         });
 
@@ -217,7 +217,7 @@ export default function ProductPage() {
                                         </div>
                                     </div>
                                 )}
-                                
+
                                 <div className="absolute bottom-4 right-4 bg-white/90 backdrop-blur-sm px-4 py-2 rounded-full text-sm text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity">
                                     Hover to zoom
                                 </div>
@@ -230,9 +230,8 @@ export default function ProductPage() {
                                         <button
                                             key={index}
                                             onClick={() => setActiveImage(index)}
-                                            className={`relative aspect-square bg-gray-100 rounded-xl overflow-hidden transition-all duration-300 ${
-                                                activeImage === index ? 'ring-2 ring-black scale-105' : 'hover:scale-105'
-                                            }`}
+                                            className={`relative aspect-square bg-gray-100 rounded-xl overflow-hidden transition-all duration-300 ${activeImage === index ? 'ring-2 ring-black scale-105' : 'hover:scale-105'
+                                                }`}
                                         >
                                             <Image
                                                 src={img}
@@ -253,11 +252,10 @@ export default function ProductPage() {
                                 <h1 className="text-5xl font-black mb-3">{product.name}</h1>
                                 <div className="flex items-center space-x-4">
                                     <span className="text-3xl font-black">₦{product.price.toLocaleString()}</span>
-                                    <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
-                                        product.inStock 
-                                            ? 'bg-green-100 text-green-700' 
+                                    <span className={`px-3 py-1 rounded-full text-sm font-semibold ${product.inStock
+                                            ? 'bg-green-100 text-green-700'
                                             : 'bg-red-100 text-red-700'
-                                    }`}>
+                                        }`}>
                                         {product.inStock ? 'In Stock' : 'Out of Stock'}
                                     </span>
                                 </div>
@@ -272,9 +270,8 @@ export default function ProductPage() {
                                     {[...Array(5)].map((_, i) => (
                                         <svg
                                             key={i}
-                                            className={`w-5 h-5 ${
-                                                i < Math.floor(product.rating) ? 'text-yellow-400' : 'text-gray-300'
-                                            }`}
+                                            className={`w-5 h-5 ${i < Math.floor(product.rating) ? 'text-yellow-400' : 'text-gray-300'
+                                                }`}
                                             fill="currentColor"
                                             viewBox="0 0 20 20"
                                         >
@@ -299,11 +296,10 @@ export default function ProductPage() {
                                             <button
                                                 key={color}
                                                 onClick={() => setSelectedColor(color)}
-                                                className={`px-6 py-3 rounded-xl border-2 transition-all duration-300 ${
-                                                    selectedColor === color
+                                                className={`px-6 py-3 rounded-xl border-2 transition-all duration-300 ${selectedColor === color
                                                         ? 'border-black bg-black text-white'
                                                         : 'border-gray-200 hover:border-black text-gray-700'
-                                                }`}
+                                                    }`}
                                             >
                                                 {color}
                                             </button>
@@ -321,11 +317,10 @@ export default function ProductPage() {
                                             <button
                                                 key={size}
                                                 onClick={() => setSelectedSize(size)}
-                                                className={`w-16 h-16 rounded-xl border-2 transition-all duration-300 ${
-                                                    selectedSize === size
+                                                className={`w-16 h-16 rounded-xl border-2 transition-all duration-300 ${selectedSize === size
                                                         ? 'border-black bg-black text-white'
                                                         : 'border-gray-200 hover:border-black text-gray-700'
-                                                }`}
+                                                    }`}
                                             >
                                                 {size}
                                             </button>
@@ -366,7 +361,7 @@ export default function ProductPage() {
                                     </svg>
                                     <span>{addingToCart ? 'Adding...' : 'Add to Cart'}</span>
                                 </button>
-                                
+
                                 <button
                                     onClick={handleBuyNow}
                                     disabled={!product.inStock}
