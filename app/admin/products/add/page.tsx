@@ -21,6 +21,7 @@ export default function AddProductPage() {
     colors: '',
     inStock: true,
     featured: false,
+    flashSale: false,
     rating: 4.5,
     reviews: 0
   });
@@ -53,6 +54,7 @@ export default function AddProductPage() {
         colors: colorsArray,
         inStock: formData.inStock,
         featured: formData.featured,
+        flashSale: formData.flashSale, 
         rating: formData.rating,
         reviews: formData.reviews,
         images: imageUrl ? [imageUrl] : [],
@@ -211,6 +213,17 @@ export default function AddProductPage() {
             <span>Featured Product</span>
           </label>
         </div>
+
+  {/* ADD THIS NEW CHECKBOX */}
+  <label className="flex items-center space-x-3">
+    <input
+      type="checkbox"
+      checked={formData.flashSale}
+      onChange={(e) => setFormData({...formData, flashSale: e.target.checked})}
+      className="w-5 h-5 rounded border-gray-300 text-black focus:ring-black"
+    />
+    <span className="text-gray-700">🔥 Flash Sale</span>
+  </label>
 
         {/* Buttons */}
         <div className="flex justify-end space-x-4 pt-4">

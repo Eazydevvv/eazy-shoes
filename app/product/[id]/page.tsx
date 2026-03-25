@@ -10,7 +10,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useCart } from '@/context/CartContext';
 import { Suspense } from 'react';
-
+import { FaWhatsapp, FaTwitter, FaFacebookF } from 'react-icons/fa';
 interface Product {
     id: string;
     name: string;
@@ -254,8 +254,8 @@ function ProductContent() {
                                 <div className="flex items-center space-x-4">
                                     <span className="text-3xl font-black">₦{product.price.toLocaleString()}</span>
                                     <span className={`px-3 py-1 rounded-full text-sm font-semibold ${product.inStock
-                                            ? 'bg-green-100 text-green-700'
-                                            : 'bg-red-100 text-red-700'
+                                        ? 'bg-green-100 text-green-700'
+                                        : 'bg-red-100 text-red-700'
                                         }`}>
                                         {product.inStock ? 'In Stock' : 'Out of Stock'}
                                     </span>
@@ -298,8 +298,8 @@ function ProductContent() {
                                                 key={color}
                                                 onClick={() => setSelectedColor(color)}
                                                 className={`px-6 py-3 rounded-xl border-2 transition-all duration-300 ${selectedColor === color
-                                                        ? 'border-black bg-black text-white'
-                                                        : 'border-gray-200 hover:border-black text-gray-700'
+                                                    ? 'border-black bg-black text-white'
+                                                    : 'border-gray-200 hover:border-black text-gray-700'
                                                     }`}
                                             >
                                                 {color}
@@ -319,8 +319,8 @@ function ProductContent() {
                                                 key={size}
                                                 onClick={() => setSelectedSize(size)}
                                                 className={`w-16 h-16 rounded-xl border-2 transition-all duration-300 ${selectedSize === size
-                                                        ? 'border-black bg-black text-white'
-                                                        : 'border-gray-200 hover:border-black text-gray-700'
+                                                    ? 'border-black bg-black text-white'
+                                                    : 'border-gray-200 hover:border-black text-gray-700'
                                                     }`}
                                             >
                                                 {size}
@@ -374,7 +374,44 @@ function ProductContent() {
                                     <span>Buy Now</span>
                                 </button>
                             </div>
+                            {/* Social Share */}
+                            <div className="flex gap-3 pt-4">
+                                <button
+                                    onClick={() =>
+                                        window.open(
+                                            `https://wa.me/?text=${encodeURIComponent(`Check out ${product.name} on EAZY! ${window.location.href}`)}`,
+                                            '_blank'
+                                        )
+                                    }
+                                    className="p-2 bg-green-500 text-white rounded-full w-10 h-10 flex items-center justify-center hover:bg-green-600 hover:scale-110 transition"
+                                >
+                                    <FaWhatsapp size={18} />
+                                </button>
 
+                                <button
+                                    onClick={() =>
+                                        window.open(
+                                            `https://twitter.com/intent/tweet?text=${encodeURIComponent(`Check out ${product.name} on EAZY!`)}&url=${encodeURIComponent(window.location.href)}`,
+                                            '_blank'
+                                        )
+                                    }
+                                    className="p-2 bg-black text-white rounded-full w-10 h-10 flex items-center justify-center hover:bg-gray-800 hover:scale-110 transition"
+                                >
+                                    <FaTwitter size={18} />
+                                </button>
+
+                                <button
+                                    onClick={() =>
+                                        window.open(
+                                            `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}`,
+                                            '_blank'
+                                        )
+                                    }
+                                    className="p-2 bg-blue-600 text-white rounded-full w-10 h-10 flex items-center justify-center hover:bg-blue-700 hover:scale-110 transition"
+                                >
+                                    <FaFacebookF size={18} />
+                                </button>
+                            </div>
                             {/* Login/Register Prompt */}
                             {!user && (
                                 <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
@@ -421,9 +458,9 @@ function ProductContent() {
     );
 }
 export default function ProductPage() {
-  return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-black"></div></div>}>
-      <ProductContent />
-    </Suspense>
-  );
+    return (
+        <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-black"></div></div>}>
+            <ProductContent />
+        </Suspense>
+    );
 }

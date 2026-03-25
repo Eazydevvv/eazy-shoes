@@ -7,6 +7,7 @@ import { collection, getDocs } from 'firebase/firestore';
 import ProductCard from '@/components/ui/ProductCard';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+
 import { Suspense } from 'react';
 
 interface Product {
@@ -23,6 +24,7 @@ interface Product {
 function ProductsContent() {
   const searchParams = useSearchParams();
   const categoryFilter = searchParams.get('category');
+const searchQuery = searchParams.get('search') || '';
   
   const [products, setProducts] = useState<Product[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
@@ -42,6 +44,12 @@ function ProductsContent() {
         console.log('📦 Products loaded:', productsData.length);
         
         setProducts(productsData);
+        let filtered = productsData;
+    if (searchQuery) {
+      filtered = filtered.filter(p => 
+        p.name.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
         
         // Extract unique categories
         const uniqueCategories = ['all', ...new Set(productsData.map(p => p.category).filter(Boolean))];

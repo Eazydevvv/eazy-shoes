@@ -7,7 +7,10 @@ import { onAuthStateChanged, signOut } from 'firebase/auth';
 import Link from 'next/link';
 import { CartProvider } from '@/context/CartContext';
 import CartIcon from '@/components/ui/CartIcon';
+import SearchBar from '@/components/ui/SearchBar';
 import WhatsAppButton from '@/components/ui/WhatsAppButton';
+import { WishlistProvider } from '@/context/WishlistContext';
+import WishlistIcon from '@/components/ui/WishlistIcon';
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -36,6 +39,7 @@ export default function RootLayout({
     <html lang="en">
       <body className={inter.className}>
         <CartProvider>
+          <WishlistProvider>
           <header className="bg-white/80 backdrop-blur-md sticky top-0 z-50 border-b border-gray-200">
             <nav className="container mx-auto px-4 py-3 flex justify-between items-center">
               {/* Logo */}
@@ -56,9 +60,9 @@ export default function RootLayout({
                 <Link href="/dashboard" className="text-gray-600 hover:text-black transition-colors font-medium">
                   Dashboard
                 </Link>
-                
+                <WishlistIcon />
                 <CartIcon />
-                
+                <SearchBar />
                 {user ? (
                   <div className="flex items-center space-x-4">
                     <span className="text-sm text-gray-600 hidden lg:inline">{user.email}</span>
@@ -81,7 +85,9 @@ export default function RootLayout({
 
               {/* Mobile Menu Button */}
               <div className="flex items-center gap-3 md:hidden">
+                <WishlistIcon />
                 <CartIcon />
+                <SearchBar />
                 <button
                   onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                   className="p-2 rounded-lg hover:bg-gray-100"
@@ -157,6 +163,7 @@ export default function RootLayout({
           </footer>
 
           <WhatsAppButton />
+        </WishlistProvider>
         </CartProvider>
       </body>
     </html>

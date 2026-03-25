@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { useCart } from '@/context/CartContext';
 import Image from 'next/image';
 
+
 interface ProductCardProps {
   product: {
     id: string;
@@ -14,6 +15,8 @@ interface ProductCardProps {
     rating?: number;
     reviews?: number;
     images?: string[];
+    flashSale: false,
+
   };
 }
 
@@ -46,6 +49,13 @@ export default function ProductCard({ product }: ProductCardProps) {
       <div className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-2">
         {/* Image Container */}
         <div className="relative h-64 bg-gradient-to-br from-gray-100 to-gray-200 overflow-hidden">
+
+              {/* ADD THIS RIGHT HERE - inside the image container */}
+  {product.flashSale && (
+    <span className="absolute top-2 left-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full z-10">
+      🔥 SALE
+    </span>
+  )}
           {productImage ? (
             <Image
               src={productImage}
@@ -81,7 +91,8 @@ export default function ProductCard({ product }: ProductCardProps) {
             </div>
             <span className="text-2xl font-black text-black">₦{product.price}</span>
           </div>
-
+          
+          
           {/* Rating and Add to Cart */}
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-1">

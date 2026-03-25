@@ -81,6 +81,7 @@ export default function AdminLayout({
                 <Link href="/admin/withdrawals" className="hover:text-gray-300 transition">
   Withdrawals
 </Link>
+<Link href="/admin/analytics" className="hover:text-gray-300 transition">Analytics</Link>
               </nav>
             </div>
             <div className="flex items-center space-x-4">
