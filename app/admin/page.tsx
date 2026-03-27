@@ -5,6 +5,8 @@ import { db } from '@/lib/firebase/config';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import Link from 'next/link';
 
+const COMMISSION_PER_SHOE = 2000; // ₦2,000 per shoe
+
 interface TopProduct {
   productId: string;
   productName: string;
@@ -33,8 +35,11 @@ export default function AdminDashboard() {
         
         // Calculate total revenue
         let revenue = 0;
+        let totalCommissionPaid = 0;
         ordersSnap.forEach(doc => {
-          revenue += doc.data().totalAmount || 0;
+          const data = doc.data();
+          revenue += data.totalAmount || 0;
+          totalCommissionPaid += data.commission || 0;
         });
 
         setStats({
@@ -45,30 +50,35 @@ export default function AdminDashboard() {
           totalRevenue: revenue
         });
 
-        // Fetch top referred products
+        // Fetch top referred products (per shoe commission)
         const ordersData: any[] = [];
         ordersSnap.forEach(doc => {
           const data = doc.data();
-          if (data.referralCode && data.referredProduct) {
-            ordersData.push({
-              productId: data.referredProduct,
-              productName: data.referredProductName || 'Unknown',
-              amount: data.totalAmount
+          if (data.referralCode && data.products) {
+            // Each product in the order has its own commission
+            data.products.forEach((product: any) => {
+              ordersData.push({
+                productId: product.productId,
+                productName: product.productName,
+                quantity: product.quantity,
+                commission: product.commission || (COMMISSION_PER_SHOE * product.quantity)
+              });
             });
           }
         });
 
         // Group by product
-        const productMap = new Map<string, { count: number; commission: number }>();
+        const productMap = new Map<string, { count: number; commission: number; name: string }>();
         ordersData.forEach(order => {
           const existing = productMap.get(order.productId);
           if (existing) {
-            existing.count++;
-            existing.commission += order.amount * 0.1;
+            existing.count += order.quantity;
+            existing.commission += order.commission;
           } else {
             productMap.set(order.productId, {
-              count: 1,
-              commission: order.amount * 0.1
+              count: order.quantity,
+              commission: order.commission,
+              name: order.productName
             });
           }
         });
@@ -76,7 +86,7 @@ export default function AdminDashboard() {
         // Convert to array and sort
         const topProductsArray: TopProduct[] = Array.from(productMap.entries()).map(([productId, data]) => ({
           productId,
-          productName: ordersData.find(o => o.productId === productId)?.productName || 'Unknown',
+          productName: data.name || 'Unknown',
           referralCount: data.count,
           totalCommission: data.commission
         }));
@@ -147,12 +157,12 @@ export default function AdminDashboard() {
                   </div>
                   <div>
                     <p className="font-semibold">{product.productName}</p>
-                    <p className="text-sm text-gray-500">{product.referralCount} referrals</p>
+                    <p className="text-sm text-gray-500">{product.referralCount} shoes sold via referral</p>
                   </div>
                 </div>
                 <div className="text-right">
                   <p className="font-bold text-green-600">₦{product.totalCommission.toLocaleString()}</p>
-                  <p className="text-xs text-gray-500">Commission paid</p>
+                  <p className="text-xs text-gray-500">Commission paid (₦{COMMISSION_PER_SHOE}/shoe)</p>
                 </div>
               </div>
             ))}
@@ -181,12 +191,12 @@ export default function AdminDashboard() {
         </Link>
 
         <Link
-          href="/admin/categories"
-          className="bg-gradient-to-r from-purple-600 to-purple-700 text-white p-6 rounded-xl hover:from-purple-700 hover:to-purple-800 transition-all duration-300 transform hover:scale-105"
+          href="/admin/withdrawals"
+          className="bg-gradient-to-r from-green-600 to-green-700 text-white p-6 rounded-xl hover:from-green-700 hover:to-green-800 transition-all duration-300 transform hover:scale-105"
         >
-          <div className="text-3xl mb-3">🏷️</div>
-          <h3 className="font-bold text-lg">Manage Categories</h3>
-          <p className="text-sm text-gray-200 mt-2">Add/edit product categories</p>
+          <div className="text-3xl mb-3">💰</div>
+          <h3 className="font-bold text-lg">Withdrawals</h3>
+          <p className="text-sm text-gray-200 mt-2">Process affiliate payouts</p>
         </Link>
       </div>
     </div>

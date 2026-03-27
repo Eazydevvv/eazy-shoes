@@ -19,6 +19,8 @@ interface CartItem {
   referralCode?: string;
 }
 
+const COMMISSION_PER_SHOE = 2000; // ₦2,000 per shoe
+
 function CheckoutContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -38,6 +40,11 @@ function CheckoutContent() {
   });
 
   const totalAmount = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  
+  // Calculate total commission (per shoe, not per order)
+  const totalCommission = refCode 
+    ? cartItems.reduce((sum, item) => sum + (COMMISSION_PER_SHOE * item.quantity), 0)
+    : 0;
 
   useEffect(() => {
     const urlRef = searchParams.get('ref');
@@ -96,28 +103,34 @@ function CheckoutContent() {
 
   const handlePaymentSuccess = async (reference: string) => {
     try {
-      const commission = refCode ? totalAmount * 0.1 : 0;
+      // Calculate how many shoes were referred (total quantity)
+      const totalQuantity = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+      const commissionEarned = refCode ? COMMISSION_PER_SHOE * totalQuantity : 0;
       
       const orderData = {
         orderReference: reference,
         userId: user.uid,
         userEmail: user.email,
         deliveryAddress: formData,
-        products: cartItems,
+        products: cartItems.map(item => ({
+          ...item,
+          commission: COMMISSION_PER_SHOE * item.quantity // Per product commission
+        })),
         totalAmount: totalAmount,
+        totalQuantity: totalQuantity,
         status: 'paid',
         paymentMethod: 'paystack',
         referralCode: refCode,
         referrerId: referrerId,
-        referredProductId: cartItems[0]?.productId,
-        referredProductName: cartItems[0]?.productName,
-        commission: commission,
+        commission: commissionEarned, // Total commission for this order
+        commissionPerShoe: COMMISSION_PER_SHOE,
         createdAt: new Date(),
         paidAt: new Date()
       };
 
       await addDoc(collection(db, 'orders'), orderData);
 
+      // Update referrer's earnings
       if (refCode && referrerId) {
         const referrerRef = doc(db, 'users', referrerId);
         const referrerDoc = await getDoc(referrerRef);
@@ -126,8 +139,8 @@ function CheckoutContent() {
           const currentReferrals = referrerDoc.data().totalReferrals || 0;
           
           await updateDoc(referrerRef, {
-            totalEarnings: currentEarnings + commission,
-            totalReferrals: currentReferrals + 1
+            totalEarnings: currentEarnings + commissionEarned,
+            totalReferrals: currentReferrals + totalQuantity // Each shoe counts as a referral
           });
         }
       }
@@ -164,7 +177,7 @@ function CheckoutContent() {
                   🎉 You're shopping through a referral link!
                 </p>
                 <p className="text-green-600 text-sm mt-1">
-                  The person who referred you will get 10% commission when you complete this purchase.
+                  The person who referred you will get ₦{COMMISSION_PER_SHOE.toLocaleString()} for every shoe you buy!
                 </p>
               </div>
             )}
@@ -230,7 +243,7 @@ function CheckoutContent() {
                     {item.productName} x{item.quantity}
                     {item.size && <span className="text-gray-500 ml-2">Size: {item.size}</span>}
                   </span>
-                  <span>₦{item.price * item.quantity}</span>
+                  <span>₦{(item.price * item.quantity).toLocaleString()}</span>
                 </div>
               ))}
 
@@ -239,6 +252,12 @@ function CheckoutContent() {
                   <span>Total</span>
                   <span>₦{totalAmount.toLocaleString()}</span>
                 </div>
+                {refCode && (
+                  <div className="flex justify-between text-sm text-green-600 mt-2">
+                    <span>Referral commission:</span>
+                    <span>+ ₦{(cartItems.reduce((sum, item) => sum + (COMMISSION_PER_SHOE * item.quantity), 0)).toLocaleString()}</span>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -253,7 +272,8 @@ function CheckoutContent() {
                 userId: user.uid,
                 referralCode: refCode,
                 referrerId: referrerId,
-                products: cartItems
+                products: cartItems,
+                commission: totalCommission
               }}
               subaccount={subaccount}
             />

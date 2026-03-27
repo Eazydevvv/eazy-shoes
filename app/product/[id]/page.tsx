@@ -11,6 +11,7 @@ import Image from 'next/image';
 import { useCart } from '@/context/CartContext';
 import { Suspense } from 'react';
 import { FaWhatsapp, FaTwitter, FaFacebookF } from 'react-icons/fa';
+
 interface Product {
     id: string;
     name: string;
@@ -34,6 +35,7 @@ function ProductContent() {
     const { addToCart } = useCart();
 
     const [refCode, setRefCode] = useState<string | null>(null);
+    const [shareReferralCode, setShareReferralCode] = useState<string | null>(null);
     const [product, setProduct] = useState<Product | null>(null);
     const [loading, setLoading] = useState(true);
     const [selectedSize, setSelectedSize] = useState<number | null>(null);
@@ -43,19 +45,38 @@ function ProductContent() {
     const [user, setUser] = useState<any>(null);
     const [addingToCart, setAddingToCart] = useState(false);
 
+    // Build share link with referral code
+    const getShareLink = () => {
+        if (typeof window === 'undefined') return '';
+        const baseUrl = window.location.href.split('?')[0];
+        // Use the referral code from URL or from localStorage
+        const code = refCode || shareReferralCode;
+        if (code) {
+            return `${baseUrl}?ref=${code}`;
+        }
+        return baseUrl;
+    };
+
+    const shareLink = getShareLink();
+
     useEffect(() => {
         // Get referral code from URL
         const ref = searchParams.get('ref');
         if (ref) {
             setRefCode(ref);
-            // Check if we're in browser
+            setShareReferralCode(ref);
             if (typeof window !== 'undefined') {
                 localStorage.setItem('referralCode', ref);
                 localStorage.setItem('pendingReferral', ref);
                 localStorage.setItem('pendingProduct', params.id as string);
             }
             console.log('🎯 Product referral detected:', ref);
-            console.log('💾 Saved referral:', ref);
+        } else {
+            // Check if user has saved referral code
+            const savedRef = typeof window !== 'undefined' ? localStorage.getItem('referralCode') : null;
+            if (savedRef) {
+                setShareReferralCode(savedRef);
+            }
         }
 
         const fetchProduct = async () => {
@@ -81,7 +102,7 @@ function ProductContent() {
         });
 
         return () => unsubscribe();
-    }, [params.id, searchParams]); // REMOVED user from dependencies
+    }, [params.id, searchParams]);
 
     const handleBuyNow = () => {
         if (!product) return;
@@ -96,7 +117,6 @@ function ProductContent() {
             return;
         }
 
-        // Prepare cart item with product-specific referral code
         const cartItem = {
             productId: product.id,
             productName: product.name,
@@ -105,14 +125,13 @@ function ProductContent() {
             size: selectedSize,
             color: selectedColor,
             image: product.images?.[0] || '',
-            referralCode: refCode // Product-specific referral!
+            referralCode: refCode
         };
 
         if (typeof window !== 'undefined') {
             sessionStorage.setItem('checkoutCart', JSON.stringify([cartItem]));
         }
 
-        // Pass referral to checkout
         const checkoutUrl = refCode ? `/checkout?ref=${refCode}` : '/checkout';
         router.push(checkoutUrl);
     };
@@ -185,7 +204,7 @@ function ProductContent() {
                     {refCode && (
                         <div className="mb-6 bg-green-50 border border-green-200 rounded-xl p-4 text-center">
                             <p className="text-green-700">
-                                🎉 You came through a referral link! When you buy this shoe, the person who referred you gets 10% commission!
+                                🎉 You came through a referral link! When you buy this shoe, the person who referred you gets ₦2,000 per shoe!
                             </p>
                         </div>
                     )}
@@ -218,7 +237,6 @@ function ProductContent() {
                                         </div>
                                     </div>
                                 )}
-
                                 <div className="absolute bottom-4 right-4 bg-white/90 backdrop-blur-sm px-4 py-2 rounded-full text-sm text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity">
                                     Hover to zoom
                                 </div>
@@ -231,8 +249,9 @@ function ProductContent() {
                                         <button
                                             key={index}
                                             onClick={() => setActiveImage(index)}
-                                            className={`relative aspect-square bg-gray-100 rounded-xl overflow-hidden transition-all duration-300 ${activeImage === index ? 'ring-2 ring-black scale-105' : 'hover:scale-105'
-                                                }`}
+                                            className={`relative aspect-square bg-gray-100 rounded-xl overflow-hidden transition-all duration-300 ${
+                                                activeImage === index ? 'ring-2 ring-black scale-105' : 'hover:scale-105'
+                                            }`}
                                         >
                                             <Image
                                                 src={img}
@@ -253,10 +272,11 @@ function ProductContent() {
                                 <h1 className="text-5xl font-black mb-3">{product.name}</h1>
                                 <div className="flex items-center space-x-4">
                                     <span className="text-3xl font-black">₦{product.price.toLocaleString()}</span>
-                                    <span className={`px-3 py-1 rounded-full text-sm font-semibold ${product.inStock
-                                        ? 'bg-green-100 text-green-700'
-                                        : 'bg-red-100 text-red-700'
-                                        }`}>
+                                    <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
+                                        product.inStock 
+                                            ? 'bg-green-100 text-green-700' 
+                                            : 'bg-red-100 text-red-700'
+                                    }`}>
                                         {product.inStock ? 'In Stock' : 'Out of Stock'}
                                     </span>
                                 </div>
@@ -271,8 +291,9 @@ function ProductContent() {
                                     {[...Array(5)].map((_, i) => (
                                         <svg
                                             key={i}
-                                            className={`w-5 h-5 ${i < Math.floor(product.rating) ? 'text-yellow-400' : 'text-gray-300'
-                                                }`}
+                                            className={`w-5 h-5 ${
+                                                i < Math.floor(product.rating) ? 'text-yellow-400' : 'text-gray-300'
+                                            }`}
                                             fill="currentColor"
                                             viewBox="0 0 20 20"
                                         >
@@ -297,10 +318,11 @@ function ProductContent() {
                                             <button
                                                 key={color}
                                                 onClick={() => setSelectedColor(color)}
-                                                className={`px-6 py-3 rounded-xl border-2 transition-all duration-300 ${selectedColor === color
-                                                    ? 'border-black bg-black text-white'
-                                                    : 'border-gray-200 hover:border-black text-gray-700'
-                                                    }`}
+                                                className={`px-6 py-3 rounded-xl border-2 transition-all duration-300 ${
+                                                    selectedColor === color
+                                                        ? 'border-black bg-black text-white'
+                                                        : 'border-gray-200 hover:border-black text-gray-700'
+                                                }`}
                                             >
                                                 {color}
                                             </button>
@@ -318,10 +340,11 @@ function ProductContent() {
                                             <button
                                                 key={size}
                                                 onClick={() => setSelectedSize(size)}
-                                                className={`w-16 h-16 rounded-xl border-2 transition-all duration-300 ${selectedSize === size
-                                                    ? 'border-black bg-black text-white'
-                                                    : 'border-gray-200 hover:border-black text-gray-700'
-                                                    }`}
+                                                className={`w-16 h-16 rounded-xl border-2 transition-all duration-300 ${
+                                                    selectedSize === size
+                                                        ? 'border-black bg-black text-white'
+                                                        : 'border-gray-200 hover:border-black text-gray-700'
+                                                }`}
                                             >
                                                 {size}
                                             </button>
@@ -362,7 +385,7 @@ function ProductContent() {
                                     </svg>
                                     <span>{addingToCart ? 'Adding...' : 'Add to Cart'}</span>
                                 </button>
-
+                                
                                 <button
                                     onClick={handleBuyNow}
                                     disabled={!product.inStock}
@@ -374,44 +397,54 @@ function ProductContent() {
                                     <span>Buy Now</span>
                                 </button>
                             </div>
-                            {/* Social Share */}
-                            <div className="flex gap-3 pt-4">
-                                <button
-                                    onClick={() =>
-                                        window.open(
-                                            `https://wa.me/?text=${encodeURIComponent(`Check out ${product.name} on EAZY! ${window.location.href}`)}`,
-                                            '_blank'
-                                        )
-                                    }
-                                    className="p-2 bg-green-500 text-white rounded-full w-10 h-10 flex items-center justify-center hover:bg-green-600 hover:scale-110 transition"
-                                >
-                                    <FaWhatsapp size={18} />
-                                </button>
 
-                                <button
-                                    onClick={() =>
-                                        window.open(
-                                            `https://twitter.com/intent/tweet?text=${encodeURIComponent(`Check out ${product.name} on EAZY!`)}&url=${encodeURIComponent(window.location.href)}`,
-                                            '_blank'
-                                        )
-                                    }
-                                    className="p-2 bg-black text-white rounded-full w-10 h-10 flex items-center justify-center hover:bg-gray-800 hover:scale-110 transition"
-                                >
-                                    <FaTwitter size={18} />
-                                </button>
+                            {/* Social Share Buttons */}
+                            <div className="border-t pt-6">
+                                <p className="text-sm text-gray-500 mb-3">Share this shoe:</p>
+                                <div className="flex gap-3">
+                                    <button
+                                        onClick={() =>
+                                            window.open(
+                                                `https://wa.me/?text=${encodeURIComponent(`Check out ${product.name} on EAZY! ${shareLink}`)}`,
+                                                '_blank'
+                                            )
+                                        }
+                                        className="p-2 bg-green-500 text-white rounded-full w-10 h-10 flex items-center justify-center hover:bg-green-600 hover:scale-110 transition"
+                                    >
+                                        <FaWhatsapp size={18} />
+                                    </button>
 
-                                <button
-                                    onClick={() =>
-                                        window.open(
-                                            `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}`,
-                                            '_blank'
-                                        )
-                                    }
-                                    className="p-2 bg-blue-600 text-white rounded-full w-10 h-10 flex items-center justify-center hover:bg-blue-700 hover:scale-110 transition"
-                                >
-                                    <FaFacebookF size={18} />
-                                </button>
+                                    <button
+                                        onClick={() =>
+                                            window.open(
+                                                `https://twitter.com/intent/tweet?text=${encodeURIComponent(`Check out ${product.name} on EAZY!`)}&url=${encodeURIComponent(shareLink)}`,
+                                                '_blank'
+                                            )
+                                        }
+                                        className="p-2 bg-black text-white rounded-full w-10 h-10 flex items-center justify-center hover:bg-gray-800 hover:scale-110 transition"
+                                    >
+                                        <FaTwitter size={18} />
+                                    </button>
+
+                                    <button
+                                        onClick={() =>
+                                            window.open(
+                                                `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareLink)}`,
+                                                '_blank'
+                                            )
+                                        }
+                                        className="p-2 bg-blue-600 text-white rounded-full w-10 h-10 flex items-center justify-center hover:bg-blue-700 hover:scale-110 transition"
+                                    >
+                                        <FaFacebookF size={18} />
+                                    </button>
+                                </div>
+                                {shareReferralCode && (
+                                    <p className="text-xs text-gray-400 mt-2">
+                                        Your referral code: <span className="font-mono">{shareReferralCode}</span>
+                                    </p>
+                                )}
                             </div>
+
                             {/* Login/Register Prompt */}
                             {!user && (
                                 <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
@@ -457,9 +490,14 @@ function ProductContent() {
         </main>
     );
 }
+
 export default function ProductPage() {
     return (
-        <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-black"></div></div>}>
+        <Suspense fallback={
+            <div className="min-h-screen flex items-center justify-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-black"></div>
+            </div>
+        }>
             <ProductContent />
         </Suspense>
     );

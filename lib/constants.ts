@@ -1,0 +1,1 @@
+export const REFERRAL_COMMISSION_PER_PRODUCT = 2000; // ₦2,000 per shoe
