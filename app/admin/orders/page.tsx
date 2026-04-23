@@ -1,4 +1,3 @@
-// app/admin/orders/page.tsx
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -12,7 +11,7 @@ interface Order {
   userId: string;
   userEmail: string;
   totalAmount: number;
-  status: 'paid' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
+  status: 'pending' | 'paid' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
   paymentMethod: string;
   deliveryAddress: {
     fullName: string;
@@ -25,6 +24,7 @@ interface Order {
   referralCode?: string;
   createdAt: any;
   paidAt: any;
+  paymentScreenshot?: string;
 }
 
 export default function AdminOrdersPage() {
@@ -60,9 +60,8 @@ export default function AdminOrdersPage() {
         status: newStatus,
         updatedAt: new Date()
       });
-      
-      // Update local state
-      setOrders(orders.map(order => 
+
+      setOrders(orders.map(order =>
         order.id === orderId ? { ...order, status: newStatus as any } : order
       ));
     } catch (error) {
@@ -73,12 +72,33 @@ export default function AdminOrdersPage() {
     }
   };
 
-  const filteredOrders = filter === 'all' 
-    ? orders 
+  const confirmPayment = async (orderId: string) => {
+    setUpdating(orderId);
+    try {
+      await updateDoc(doc(db, 'orders', orderId), {
+        status: 'paid',
+        paidAt: new Date()
+      });
+
+      setOrders(orders.map(order =>
+        order.id === orderId ? { ...order, status: 'paid' as any, paidAt: new Date() } : order
+      ));
+      alert('✅ Payment confirmed! Order marked as paid.');
+    } catch (error) {
+      console.error('Error confirming payment:', error);
+      alert('Failed to confirm payment');
+    } finally {
+      setUpdating(null);
+    }
+  };
+
+  const filteredOrders = filter === 'all'
+    ? orders
     : orders.filter(order => order.status === filter);
 
   const getStatusColor = (status: string) => {
-    switch(status) {
+    switch (status) {
+      case 'pending': return 'bg-orange-100 text-orange-700';
       case 'paid': return 'bg-yellow-100 text-yellow-700';
       case 'processing': return 'bg-blue-100 text-blue-700';
       case 'shipped': return 'bg-purple-100 text-purple-700';
@@ -98,7 +118,6 @@ export default function AdminOrdersPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Orders Management</h1>
         <div className="flex space-x-2">
@@ -108,6 +127,7 @@ export default function AdminOrdersPage() {
             className="px-4 py-2 border border-gray-300 rounded-xl focus:border-black outline-none"
           >
             <option value="all">All Orders</option>
+            <option value="pending">Pending Payment</option>
             <option value="paid">Paid</option>
             <option value="processing">Processing</option>
             <option value="shipped">Shipped</option>
@@ -118,10 +138,14 @@ export default function AdminOrdersPage() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
         <div className="bg-white rounded-xl shadow p-4">
           <p className="text-sm text-gray-500">Total Orders</p>
           <p className="text-2xl font-bold">{orders.length}</p>
+        </div>
+        <div className="bg-orange-50 rounded-xl shadow p-4">
+          <p className="text-sm text-orange-600">Pending</p>
+          <p className="text-2xl font-bold">{orders.filter(o => o.status === 'pending').length}</p>
         </div>
         <div className="bg-yellow-50 rounded-xl shadow p-4">
           <p className="text-sm text-yellow-600">Paid</p>
@@ -167,8 +191,16 @@ export default function AdminOrdersPage() {
                     <div className="font-medium">{order.deliveryAddress?.fullName}</div>
                     <div className="text-sm text-gray-500">{order.userEmail}</div>
                     <div className="text-sm text-gray-500">{order.deliveryAddress?.phone}</div>
+                    {order.paymentScreenshot && (
+                      <img
+                        src={order.paymentScreenshot}
+                        alt="Payment proof"
+                        className="h-16 w-auto rounded border mt-1 cursor-pointer"
+                        onClick={() => window.open(order.paymentScreenshot, '_blank')}
+                      />
+                    )}
                   </td>
-                  <td className="py-4 px-6 font-bold">₦{order.totalAmount}</td>
+                  <td className="py-4 px-6 font-bold">₦{order.totalAmount?.toLocaleString()}</td>
                   <td className="py-4 px-6">
                     <div className="text-sm">
                       {order.products?.map((p, i) => (
@@ -189,26 +221,38 @@ export default function AdminOrdersPage() {
                     </div>
                   </td>
                   <td className="py-4 px-6 text-sm text-gray-600">
-                    {new Date(order.paidAt?.toDate()).toLocaleDateString()}
+                    {order.createdAt?.toDate ? new Date(order.createdAt.toDate()).toLocaleDateString() : 'N/A'}
                   </td>
                   <td className="py-4 px-6">
                     <span className={`px-3 py-1 rounded-full text-sm ${getStatusColor(order.status)}`}>
-                      {order.status}
+                      {order.status === 'pending' ? '⏳ Pending Payment' : order.status}
                     </span>
                   </td>
                   <td className="py-4 px-6">
-                    <select
-                      value={order.status}
-                      onChange={(e) => updateOrderStatus(order.id, e.target.value)}
-                      disabled={updating === order.id}
-                      className="px-3 py-1 border border-gray-300 rounded-lg text-sm focus:border-black outline-none disabled:opacity-50"
-                    >
-                      <option value="paid">Paid</option>
-                      <option value="processing">Processing</option>
-                      <option value="shipped">Shipped</option>
-                      <option value="delivered">Delivered</option>
-                      <option value="cancelled">Cancelled</option>
-                    </select>
+                    <div className="flex flex-col gap-2">
+                      {order.status === 'pending' && (
+                        <button
+                          onClick={() => confirmPayment(order.id)}
+                          disabled={updating === order.id}
+                          className="bg-green-600 text-white px-3 py-1 rounded-lg text-sm hover:bg-green-700 disabled:opacity-50"
+                        >
+                          ✅ Confirm Payment
+                        </button>
+                      )}
+                      <select
+                        value={order.status}
+                        onChange={(e) => updateOrderStatus(order.id, e.target.value)}
+                        disabled={updating === order.id}
+                        className="px-3 py-1 border border-gray-300 rounded-lg text-sm focus:border-black outline-none disabled:opacity-50"
+                      >
+                        <option value="pending">Pending</option>
+                        <option value="paid">Paid</option>
+                        <option value="processing">Processing</option>
+                        <option value="shipped">Shipped</option>
+                        <option value="delivered">Delivered</option>
+                        <option value="cancelled">Cancelled</option>
+                      </select>
+                    </div>
                   </td>
                 </tr>
               ))}

@@ -6,7 +6,6 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { auth, db } from '@/lib/firebase/config';
 import { onAuthStateChanged } from 'firebase/auth';
 import { collection, addDoc, doc, getDoc, getDocs, query, where, updateDoc } from 'firebase/firestore';
-import PaystackButton from '@/components/payment/PaystackButton';
 
 interface CartItem {
   productId: string;
@@ -19,7 +18,7 @@ interface CartItem {
   referralCode?: string;
 }
 
-const COMMISSION_PER_SHOE = 2000; // ₦2,000 per shoe
+const COMMISSION_PER_SHOE = 2000;
 
 function CheckoutContent() {
   const router = useRouter();
@@ -30,7 +29,6 @@ function CheckoutContent() {
   const [refCode, setRefCode] = useState<string | null>(null);
   const [referrerId, setReferrerId] = useState<string | null>(null);
   const [orderReference, setOrderReference] = useState<string>('');
-  const [subaccount, setSubaccount] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     fullName: '',
     phone: '',
@@ -38,13 +36,49 @@ function CheckoutContent() {
     roomNumber: '',
     landmark: ''
   });
+  const [submitting, setSubmitting] = useState(false);
+  const [screenshot, setScreenshot] = useState<File | null>(null);
+  const [screenshotPreview, setScreenshotPreview] = useState<string | null>(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [copied, setCopied] = useState(false);
 
   const totalAmount = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  
-  // Calculate total commission (per shoe, not per order)
   const totalCommission = refCode 
     ? cartItems.reduce((sum, item) => sum + (COMMISSION_PER_SHOE * item.quantity), 0)
     : 0;
+
+  const accountDetails = {
+    bank: 'PalmPay',
+    accountName: 'Israel Olalere',
+    accountNumber: '8073042250'
+  };
+
+  const copyAccountNumber = () => {
+    navigator.clipboard.writeText(accountDetails.accountNumber);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  // Upload screenshot to Cloudinary
+  const uploadToCloudinary = async (file: File): Promise<string> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', 'eazy-shoes');
+
+    const response = await fetch(
+      `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`,
+      {
+        method: 'POST',
+        body: formData
+      }
+    );
+
+    const data = await response.json();
+    if (!data.secure_url) {
+      throw new Error('Upload failed');
+    }
+    return data.secure_url;
+  };
 
   useEffect(() => {
     const urlRef = searchParams.get('ref');
@@ -60,7 +94,7 @@ function CheckoutContent() {
 
     let finalRef = urlRef;
     if (!finalRef && cartItems[0]?.referralCode) {
-      finalRef = cartItems[0].referralCode;
+      finalRef = cartItems[0]?.referralCode;
     }
     if (!finalRef) {
       finalRef = localStorage.getItem('pendingReferral');
@@ -101,56 +135,84 @@ function CheckoutContent() {
     return () => unsubscribe();
   }, [router, searchParams]);
 
-  const handlePaymentSuccess = async (reference: string) => {
+  const handlePlaceOrder = async () => {
+    if (!formData.fullName || !formData.phone || !formData.hostel || !formData.roomNumber) {
+      alert('Please fill all delivery fields');
+      return;
+    }
+
+    if (!screenshot) {
+      alert('Please upload a screenshot of your payment');
+      return;
+    }
+
+    setSubmitting(true);
+    setUploadProgress(0);
+
     try {
-      // Calculate how many shoes were referred (total quantity)
+      // Upload screenshot to Cloudinary
+      setUploadProgress(30);
+      const screenshotUrl = await uploadToCloudinary(screenshot);
+      setUploadProgress(60);
+      
       const totalQuantity = cartItems.reduce((sum, item) => sum + item.quantity, 0);
       const commissionEarned = refCode ? COMMISSION_PER_SHOE * totalQuantity : 0;
       
       const orderData = {
-        orderReference: reference,
+        orderReference: orderReference,
         userId: user.uid,
         userEmail: user.email,
         deliveryAddress: formData,
         products: cartItems.map(item => ({
           ...item,
-          commission: COMMISSION_PER_SHOE * item.quantity // Per product commission
+          commission: COMMISSION_PER_SHOE * item.quantity
         })),
         totalAmount: totalAmount,
         totalQuantity: totalQuantity,
-        status: 'paid',
-        paymentMethod: 'paystack',
+        status: 'pending',
+        paymentMethod: 'palmpay',
         referralCode: refCode,
         referrerId: referrerId,
-        commission: commissionEarned, // Total commission for this order
+        commission: commissionEarned,
         commissionPerShoe: COMMISSION_PER_SHOE,
-        createdAt: new Date(),
-        paidAt: new Date()
+        paymentScreenshot: screenshotUrl,
+        createdAt: new Date()
       };
 
       await addDoc(collection(db, 'orders'), orderData);
+      setUploadProgress(100);
 
-      // Update referrer's earnings
       if (refCode && referrerId) {
         const referrerRef = doc(db, 'users', referrerId);
         const referrerDoc = await getDoc(referrerRef);
         if (referrerDoc.exists()) {
-          const currentEarnings = referrerDoc.data().totalEarnings || 0;
           const currentReferrals = referrerDoc.data().totalReferrals || 0;
-          
           await updateDoc(referrerRef, {
-            totalEarnings: currentEarnings + commissionEarned,
-            totalReferrals: currentReferrals + totalQuantity // Each shoe counts as a referral
+            totalReferrals: currentReferrals + totalQuantity
           });
         }
       }
 
       localStorage.removeItem('pendingReferral');
       sessionStorage.removeItem('checkoutCart');
-      router.push(`/order-success?ref=${reference}`);
+      router.push(`/order-success?ref=${orderReference}`);
     } catch (error) {
       console.error('Error saving order:', error);
-      alert('Failed to save order. Please contact support.');
+      alert('Failed to place order. Please try again.');
+    } finally {
+      setSubmitting(false);
+      setUploadProgress(0);
+    }
+  };
+
+  const handleScreenshotChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null;
+    setScreenshot(file);
+    if (file) {
+      const previewUrl = URL.createObjectURL(file);
+      setScreenshotPreview(previewUrl);
+    } else {
+      setScreenshotPreview(null);
     }
   };
 
@@ -170,7 +232,7 @@ function CheckoutContent() {
         <div className="max-w-3xl mx-auto">
           <div className="text-center mb-8">
             <h1 className="text-4xl font-black mb-2">Checkout</h1>
-            <p className="text-gray-600">Complete your payment to order</p>
+            <p className="text-gray-600">Complete your order</p>
             {refCode && (
               <div className="bg-green-50 border border-green-200 rounded-xl p-4 mt-4">
                 <p className="text-green-700 font-semibold">
@@ -255,33 +317,75 @@ function CheckoutContent() {
                 {refCode && (
                   <div className="flex justify-between text-sm text-green-600 mt-2">
                     <span>Referral commission:</span>
-                    <span>+ ₦{(cartItems.reduce((sum, item) => sum + (COMMISSION_PER_SHOE * item.quantity), 0)).toLocaleString()}</span>
+                    <span>+ ₦{totalCommission.toLocaleString()}</span>
                   </div>
                 )}
               </div>
             </div>
 
-            {/* Payment Button */}
-            <PaystackButton
-              email={user.email}
-              amount={totalAmount}
-              reference={orderReference}
-              onSuccess={handlePaymentSuccess}
-              onClose={() => alert('Payment cancelled')}
-              metadata={{
-                userId: user.uid,
-                referralCode: refCode,
-                referrerId: referrerId,
-                products: cartItems,
-                commission: totalCommission
-              }}
-              subaccount={subaccount}
-            />
+            {/* Manual Payment Instructions */}
+            <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-6">
+              <h2 className="text-xl font-bold mb-4">💰 Payment Instructions</h2>
+              
+              <div className="bg-white p-4 rounded-xl mb-4">
+                <p className="text-sm text-gray-600 mb-2">Send payment to this account:</p>
+                <div className="flex items-center justify-between bg-gray-50 p-3 rounded-lg mb-2">
+                  <div>
+                    <p className="font-bold text-lg">{accountDetails.accountNumber}</p>
+                    <p className="text-sm">{accountDetails.bank} - {accountDetails.accountName}</p>
+                  </div>
+                  <button
+                    onClick={copyAccountNumber}
+                    className="bg-black text-white px-4 py-2 rounded-lg text-sm hover:bg-gray-800 transition"
+                  >
+                    {copied ? '✅ Copied!' : '📋 Copy'}
+                  </button>
+                </div>
+                <div className="border-t mt-3 pt-3">
+                  <p className="text-sm"><strong>Amount to send:</strong> ₦{totalAmount.toLocaleString()}</p>
+                  <p className="text-xs text-gray-500 mt-1">Send exactly this amount for faster confirmation</p>
+                </div>
+              </div>
 
-            <p className="text-xs text-gray-500 text-center">
-              Payments processed securely by Paystack.
-              You'll receive a confirmation email after payment.
-            </p>
+              {/* Screenshot Upload */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium mb-2">Upload Payment Screenshot *</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleScreenshotChange}
+                  className="w-full p-2 border border-gray-300 rounded-lg"
+                  required
+                />
+                {screenshotPreview && (
+                  <div className="mt-2">
+                    <img src={screenshotPreview} alt="Payment proof" className="h-32 w-auto rounded-lg border" />
+                    <p className="text-xs text-green-600 mt-1">✅ Screenshot ready</p>
+                  </div>
+                )}
+              </div>
+
+              {uploadProgress > 0 && uploadProgress < 100 && (
+                <div className="mb-4">
+                  <div className="bg-gray-200 rounded-full h-2">
+                    <div className="bg-green-600 h-2 rounded-full" style={{ width: `${uploadProgress}%` }}></div>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">Uploading... {uploadProgress}%</p>
+                </div>
+              )}
+
+              <button
+                onClick={handlePlaceOrder}
+                disabled={submitting}
+                className="w-full bg-black text-white py-4 rounded-xl font-semibold hover:bg-gray-800 transition disabled:opacity-50"
+              >
+                {submitting ? 'Processing...' : 'Place Order'}
+              </button>
+
+              <p className="text-xs text-gray-500 text-center mt-4">
+                After payment, upload screenshot. Your order will be confirmed after verification.
+              </p>
+            </div>
           </div>
         </div>
       </div>
