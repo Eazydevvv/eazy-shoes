@@ -201,7 +201,7 @@ export default function Home() {
               </span>
             </h2>
             <p className="text-xl text-gray-300 mb-8">
-              Refer a friend and get $20 off your next purchase. They get $10 off too!
+              Refer a friend and get 2k off your next purchase.
             </p>
             <button 
               onClick={() => router.push('/dashboard')}
