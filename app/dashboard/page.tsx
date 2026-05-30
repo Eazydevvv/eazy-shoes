@@ -31,6 +31,7 @@ function DashboardContent() {
 
     const [user, setUser] = useState<any>(null);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
     const [orders, setOrders] = useState<Order[]>([]);
     const [referralCount, setReferralCount] = useState(0);
     const [totalEarnings, setTotalEarnings] = useState(0);
@@ -43,108 +44,112 @@ function DashboardContent() {
     const [showWithdrawalHistory, setShowWithdrawalHistory] = useState(false);
 
     const fetchUserData = async (user: any) => {
-        const userDoc = await getDoc(doc(db, 'users', user.uid));
+        try {
+            const userDoc = await getDoc(doc(db, 'users', user.uid));
 
-        if (userDoc.exists()) {
-            const userData = userDoc.data();
-            let currentReferralCode = userData.referralCode;
+            if (userDoc.exists()) {
+                const userData = userDoc.data();
+                let currentReferralCode = userData.referralCode;
 
-            if (!currentReferralCode) {
-                const newReferralCode = user.uid.slice(0, 6).toUpperCase();
-                await updateDoc(doc(db, 'users', user.uid), {
-                    referralCode: newReferralCode,
-                    totalEarnings: 0,
-                    totalReferrals: 0
+                if (!currentReferralCode) {
+                    const newReferralCode = user.uid.slice(0, 6).toUpperCase();
+                    await updateDoc(doc(db, 'users', user.uid), {
+                        referralCode: newReferralCode,
+                        totalEarnings: 0,
+                        totalReferrals: 0
+                    });
+                    currentReferralCode = newReferralCode;
+                }
+
+                setReferralCode(currentReferralCode);
+                const currentBalance = userData.totalEarnings || 0;
+                setTotalEarnings(currentBalance);
+
+                const referredOrdersQuery = query(
+                    collection(db, 'orders'),
+                    where('referralCode', '==', currentReferralCode),
+                    orderBy('createdAt', 'desc')
+                );
+                const referredOrdersSnapshot = await getDocs(referredOrdersQuery);
+                setReferralCount(referredOrdersSnapshot.size);
+
+                let earnings = 0;
+                referredOrdersSnapshot.forEach(doc => {
+                    const data = doc.data();
+                    earnings += data.commission || 0;
                 });
-                currentReferralCode = newReferralCode;
+                setTotalEarnings(earnings);
             }
 
-            setReferralCode(currentReferralCode);
-            const currentBalance = userData.totalEarnings || 0;
-            setTotalEarnings(currentBalance);
-
-            // Replace the referred orders calculation
-            const referredOrdersQuery = query(
+            const ordersQuery = query(
                 collection(db, 'orders'),
-                where('referralCode', '==', currentReferralCode),
-                orderBy('createdAt', 'desc')
+                where('userId', '==', user.uid),
+                orderBy('createdAt', 'desc'),
+                limit(5)
             );
-            const referredOrdersSnapshot = await getDocs(referredOrdersQuery);
-            setReferralCount(referredOrdersSnapshot.size);
-
-            // Calculate total earnings from referred orders (₦2,000 per shoe)
-            let earnings = 0;
-            referredOrdersSnapshot.forEach(doc => {
+            const ordersSnapshot = await getDocs(ordersQuery);
+            const userOrders: Order[] = [];
+            ordersSnapshot.forEach(doc => {
                 const data = doc.data();
-                // Use commission from order (which is already calculated per shoe)
-                earnings += data.commission || 0;
+                userOrders.push({
+                    id: doc.id,
+                    orderReference: data.orderReference,
+                    totalAmount: data.totalAmount || 0,
+                    status: data.status || 'pending',
+                    products: data.products || [],
+                    createdAt: data.createdAt
+                });
             });
-            setTotalEarnings(earnings);
-        }
+            setOrders(userOrders);
 
-        const ordersQuery = query(
-            collection(db, 'orders'),
-            where('userId', '==', user.uid),
-            orderBy('createdAt', 'desc'),
-            limit(5)
-        );
-        const ordersSnapshot = await getDocs(ordersQuery);
-        const userOrders: Order[] = [];
-        ordersSnapshot.forEach(doc => {
-            const data = doc.data();
-            userOrders.push({
-                id: doc.id,
-                orderReference: data.orderReference,
-                totalAmount: data.totalAmount || 0,
-                status: data.status || 'pending',
-                products: data.products || [],
-                createdAt: data.createdAt
+            const withdrawalsQuery = query(
+                collection(db, 'withdrawals'),
+                where('userId', '==', user.uid),
+                orderBy('requestedAt', 'desc')
+            );
+
+            const withdrawalsSnapshot = await getDocs(withdrawalsQuery);
+            const withdrawalData: any[] = [];
+            withdrawalsSnapshot.forEach(doc => {
+                const data = doc.data();
+                withdrawalData.push({
+                    id: doc.id,
+                    amount: data.amount || 0,
+                    status: data.status || 'pending',
+                    fee: data.fee || 0,
+                    requestedAt: data.requestedAt,
+                    paidAt: data.paidAt
+                });
             });
-        });
-        setOrders(userOrders);
+            setWithdrawals(withdrawalData);
 
-        const withdrawalsQuery = query(
-            collection(db, 'withdrawals'),
-            where('userId', '==', user.uid),
-            orderBy('requestedAt', 'desc')
-        );
-
-        const withdrawalsSnapshot = await getDocs(withdrawalsQuery);
-        const withdrawalData: any[] = [];
-        withdrawalsSnapshot.forEach(doc => {
-            const data = doc.data();
-            withdrawalData.push({
-                id: doc.id,
-                amount: data.amount || 0,
-                status: data.status || 'pending',
-                fee: data.fee || 0,
-                requestedAt: data.requestedAt,
-                paidAt: data.paidAt
-            });
-        });
-        setWithdrawals(withdrawalData);
-
-        let pending = 0;
-        for (let i = 0; i < withdrawalData.length; i++) {
-            if (withdrawalData[i].status === 'pending') {
-                pending += withdrawalData[i].amount;
+            let pending = 0;
+            for (let i = 0; i < withdrawalData.length; i++) {
+                if (withdrawalData[i].status === 'pending') {
+                    pending += withdrawalData[i].amount;
+                }
             }
-        }
-        setPendingWithdrawal(pending);
+            setPendingWithdrawal(pending);
 
-        const productsSnapshot = await getDocs(collection(db, 'products'));
-        const productsData: Product[] = [];
-        productsSnapshot.forEach(doc => {
-            const data = doc.data();
-            productsData.push({
-                id: doc.id,
-                name: data.name || '',
-                price: data.price || 0,
-                brand: data.brand,
-                images: data.images || []
+            const productsSnapshot = await getDocs(collection(db, 'products'));
+            const productsData: Product[] = [];
+            productsSnapshot.forEach(doc => {
+                const data = doc.data();
+                productsData.push({
+                    id: doc.id,
+                    name: data.name || '',
+                    price: data.price || 0,
+                    brand: data.brand,
+                    images: data.images || []
+                });
             });
-        });
-        setProducts(productsData);
+            setProducts(productsData);
+            
+            setError(null);
+        } catch (err: any) {
+            console.error('Error fetching user data:', err);
+            setError(err.message);
+        }
     };
 
     useEffect(() => {
@@ -184,12 +189,45 @@ function DashboardContent() {
         alert('✅ Link copied!');
     };
 
+    const handleShowHistory = () => {
+        setShowWithdrawalHistory(!showWithdrawalHistory);
+    };
+
     const selectedProductData = products.find(p => p.id === selectedProduct);
 
     if (loading) {
         return (
             <div className="min-h-screen flex items-center justify-center">
                 <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-black"></div>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="min-h-screen flex items-center justify-center">
+                <div className="text-center">
+                    <p className="text-red-500 mb-4">Error: {error}</p>
+                    <button 
+                        onClick={() => window.location.reload()} 
+                        className="bg-black text-white px-4 py-2 rounded"
+                    >
+                        Refresh Page
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    if (!user) {
+        return (
+            <div className="min-h-screen flex items-center justify-center">
+                <div className="text-center">
+                    <p className="text-gray-500 mb-4">Please log in to view dashboard</p>
+                    <Link href="/auth" className="bg-black text-white px-4 py-2 rounded">
+                        Go to Login
+                    </Link>
+                </div>
             </div>
         );
     }
@@ -274,24 +312,32 @@ function DashboardContent() {
 
                     {/* Withdrawal Section */}
                     <div className="bg-gradient-to-r from-green-600 to-green-700 text-white rounded-2xl shadow-lg p-6 mb-8">
-  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-    <div>
-      <p className="text-sm opacity-80">Available Balance</p>
-      <p className="text-4xl font-bold mt-1">₦{totalEarnings.toLocaleString()}</p>
-      <p className="text-sm mt-2 opacity-80">Min withdrawal: ₦50 | Fee: ₦100</p>
-    </div>
-    <Link
-      href="/dashboard/withdraw"
-      className={`px-6 py-3 rounded-xl font-semibold transition ${
-        totalEarnings >= 150 
-          ? 'bg-yellow-500 text-black hover:bg-yellow-400' 
-          : 'bg-gray-500 text-gray-300 cursor-not-allowed pointer-events-none'
-      }`}
-    >
-      {totalEarnings >= 150 ? '💸 Withdraw Now' : `Need ₦150 (₦50 + ₦100 fee)`}
-    </Link>
-  </div>
-</div>
+                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                            <div>
+                                <p className="text-sm opacity-80">Available Balance</p>
+                                <p className="text-4xl font-bold mt-1">₦{totalEarnings.toLocaleString()}</p>
+                                <p className="text-sm mt-2 opacity-80">Min withdrawal: ₦50 | Fee: ₦100</p>
+                            </div>
+                            <Link
+                                href="/dashboard/withdraw"
+                                className={`px-6 py-3 rounded-xl font-semibold transition ${
+                                    totalEarnings >= 150 
+                                        ? 'bg-yellow-500 text-black hover:bg-yellow-400' 
+                                        : 'bg-gray-500 text-gray-300 cursor-not-allowed pointer-events-none'
+                                }`}
+                            >
+                                {totalEarnings >= 150 ? '💸 Withdraw Now' : `Need ₦150 (₦50 + ₦100 fee)`}
+                            </Link>
+                        </div>
+                        <div className="mt-4">
+                            <button
+                                onClick={handleShowHistory}
+                                className="text-sm text-white/80 hover:text-white"
+                            >
+                                {showWithdrawalHistory ? '▼ Hide Withdrawal History' : '▶ View Withdrawal History'}
+                            </button>
+                        </div>
+                    </div>
 
                     {/* Withdrawal History */}
                     {showWithdrawalHistory && withdrawals.length > 0 && (
@@ -321,7 +367,7 @@ function DashboardContent() {
                     {/* Referral Link Card */}
                     <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-2xl shadow-lg p-6 mb-8">
                         <h2 className="text-xl font-bold mb-3">🎯 Share a Specific Shoe</h2>
-                        <p className="text-sm mb-4"> 💰 When someone buys this shoe using your link, you earn ₦2,000!</p>
+                        <p className="text-sm mb-4">💰 When someone buys this shoe using your link, you earn ₦2,000 per shoe!</p>
 
                         <div className="flex flex-col sm:flex-row gap-3">
                             <select
@@ -351,6 +397,9 @@ function DashboardContent() {
                                 <p className="text-xs break-all">
                                     Link: <span className="font-mono">{getProductReferralLink(selectedProduct)}</span>
                                 </p>
+                                <p className="text-sm mt-2 text-yellow-200">
+                                    💰 When someone buys this shoe using your link, you earn ₦2,000 per shoe!
+                                </p>
                                 {selectedProductData.images?.[0] && (
                                     <a
                                         href={selectedProductData.images[0]}
@@ -368,6 +417,7 @@ function DashboardContent() {
                     <div className="bg-white rounded-2xl shadow-lg p-6">
                         <div className="flex justify-between items-center mb-6">
                             <h2 className="text-xl font-bold">📦 Recent Orders</h2>
+                            <Link href="/orders" className="text-sm text-gray-500 hover:text-black">View All →</Link>
                         </div>
 
                         {orders.length === 0 ? (
@@ -380,7 +430,7 @@ function DashboardContent() {
                         ) : (
                             <div className="space-y-3">
                                 {orders.map((order, idx) => (
-                                    <div key={`${order.id}-${idx}`} className="flex justify-between items-center p-4 border border-gray-100 rounded-xl">
+                                    <div key={`${order.id}-${idx}`} className="flex justify-between items-center p-4 border border-gray-100 rounded-xl hover:shadow-sm transition">
                                         <div>
                                             <p className="font-medium">{order.products?.[0]?.productName || 'Product'}</p>
                                             <p className="text-sm text-gray-500">

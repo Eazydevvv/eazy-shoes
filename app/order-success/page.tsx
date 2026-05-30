@@ -72,7 +72,7 @@ export default function OrderSuccessPage() {
           {/* Referral CTA */}
           <div className="bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-2xl p-8 mb-8">
             <h3 className="text-2xl font-bold mb-2">Refer a Friend & Earn!</h3>
-            <p className="mb-4">Get $20 off your next order when they make their first purchase.</p>
+            <p className="mb-4">Get 2k off your next order when they make their first purchase.</p>
             <button className="bg-white text-purple-700 px-6 py-3 rounded-full font-semibold hover:bg-gray-100 transition">
               Share Your Referral Link
             </button>
