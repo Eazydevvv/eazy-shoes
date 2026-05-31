@@ -5,7 +5,6 @@ import { useState } from 'react';
 import { useCart } from '@/context/CartContext';
 import Image from 'next/image';
 
-
 interface ProductCardProps {
   product: {
     id: string;
@@ -15,8 +14,7 @@ interface ProductCardProps {
     rating?: number;
     reviews?: number;
     images?: string[];
-    flashSale: false,
-
+    flashSale?: boolean;
   };
 }
 
@@ -25,18 +23,17 @@ export default function ProductCard({ product }: ProductCardProps) {
   const { addToCart } = useCart();
 
   const handleAddToCart = (e: React.MouseEvent) => {
-  e.preventDefault();
-  addToCart({
-    productId: product.id,
-    productName: product.name,
-    price: product.price,
-    quantity: 1,
-    image: product.images?.[0] || '' // Add image URL here
-  });
-  alert('Added to cart!');
-};
+    e.preventDefault();
+    addToCart({
+      productId: product.id,
+      productName: product.name,
+      price: product.price,
+      quantity: 1,
+      image: product.images?.[0] || ''
+    });
+    alert('Added to cart!');
+  };
 
-  // Get the first image or use null
   const productImage = product.images?.[0];
 
   return (
@@ -46,16 +43,14 @@ export default function ProductCard({ product }: ProductCardProps) {
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <div className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-2">
+      <div className="product-card rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500">
         {/* Image Container */}
-        <div className="relative h-64 bg-gradient-to-br from-gray-100 to-gray-200 overflow-hidden">
-
-              {/* ADD THIS RIGHT HERE - inside the image container */}
-  {product.flashSale && (
-    <span className="absolute top-2 left-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full z-10">
-      🔥 SALE
-    </span>
-  )}
+        <div className="relative h-64 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 overflow-hidden">
+          {product.flashSale && (
+            <span className="absolute top-2 left-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full z-10">
+              🔥 SALE
+            </span>
+          )}
           {productImage ? (
             <Image
               src={productImage}
@@ -65,10 +60,7 @@ export default function ProductCard({ product }: ProductCardProps) {
             />
           ) : (
             <div className="absolute inset-0 flex items-center justify-center">
-              <div className="text-center">
-                <span className="text-6xl mb-2 block">👟</span>
-                <p className="text-sm text-gray-500">{product.name}</p>
-              </div>
+              <span className="text-6xl">👟</span>
             </div>
           )}
           
@@ -76,7 +68,7 @@ export default function ProductCard({ product }: ProductCardProps) {
           <div className={`absolute inset-0 bg-black/60 flex items-center justify-center transition-all duration-300 ${
             isHovered ? 'opacity-100' : 'opacity-0'
           }`}>
-            <span className="bg-white text-black px-6 py-3 rounded-full font-semibold transform -translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
+            <span className="bg-white dark:bg-gray-800 text-black dark:text-white px-6 py-3 rounded-full font-semibold transform -translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
               Quick View
             </span>
           </div>
@@ -86,12 +78,11 @@ export default function ProductCard({ product }: ProductCardProps) {
         <div className="p-6">
           <div className="flex justify-between items-start mb-3">
             <div>
-              <h3 className="font-bold text-lg mb-1 line-clamp-1 text-black">{product.name}</h3>
-              <p className="text-sm text-gray-500 uppercase tracking-wide">{product.category}</p>
+              <h3 className="font-bold text-lg mb-1 line-clamp-1">{product.name}</h3>
+              <p className="text-sm opacity-70 uppercase tracking-wide">{product.category}</p>
             </div>
-            <span className="text-2xl font-black text-black">₦{product.price}</span>
+            <span className="text-2xl font-black">₦{product.price.toLocaleString()}</span>
           </div>
-          
           
           {/* Rating and Add to Cart */}
           <div className="flex items-center justify-between">
@@ -103,7 +94,7 @@ export default function ProductCard({ product }: ProductCardProps) {
                     className={`w-4 h-4 ${
                       i < Math.floor(product.rating || 0) 
                         ? 'text-yellow-400' 
-                        : 'text-gray-300'
+                        : 'text-gray-300 dark:text-gray-600'
                     }`}
                     fill="currentColor"
                     viewBox="0 0 20 20"
@@ -112,13 +103,13 @@ export default function ProductCard({ product }: ProductCardProps) {
                   </svg>
                 ))}
               </div>
-              <span className="text-xs text-gray-600 ml-1">({product.reviews || 0})</span>
+              <span className="text-xs opacity-60">({product.reviews || 0})</span>
             </div>
             
             {/* Add to Cart Button */}
             <button
               onClick={handleAddToCart}
-              className="bg-black text-white p-2 rounded-full hover:bg-gray-800 transition-all duration-300 transform hover:scale-110"
+              className="bg-black dark:bg-white text-white dark:text-black p-2 rounded-full hover:bg-gray-800 dark:hover:bg-gray-200 transition-all duration-300 transform hover:scale-110"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />

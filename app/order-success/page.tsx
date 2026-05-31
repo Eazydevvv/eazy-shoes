@@ -11,7 +11,7 @@ export default function OrderSuccessPage() {
   }, []);
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-gray-50 to-white py-12">
+    <main className="min-h-screen tyle={{ backgroundColor: 'var(--background)'">
       <div className="container mx-auto px-4">
         <div className="max-w-2xl mx-auto text-center">
           {/* Success Animation */}

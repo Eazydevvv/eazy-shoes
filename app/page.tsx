@@ -18,7 +18,6 @@ interface Product {
   featured?: boolean;
 }
 
-
 export default function Home() {
   const router = useRouter();
   const [products, setProducts] = useState<Product[]>([]);
@@ -54,10 +53,9 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
-      {/* Hero Section with Image */}
+    <main style={{ backgroundColor: 'var(--background)' }}>
+      {/* Hero Section */}
       <section className="relative bg-black text-white overflow-hidden min-h-[90vh] flex items-center">
-        {/* Background Image */}
         <div className="absolute inset-0">
           <img 
             src="https://images.unsplash.com/photo-1600185365483-26d7a4cc7519?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80"
@@ -69,7 +67,6 @@ export default function Home() {
         
         <div className="container mx-auto px-4 py-24 relative z-10">
           <div className="max-w-4xl mx-auto text-center md:text-left md:mx-0">
-            {/* Logo */}
             <div className="flex justify-center md:justify-start mb-8">
               <div className="w-24 h-24 bg-gradient-to-br from-white/10 to-white/5 rounded-3xl backdrop-blur-lg border border-white/20 flex items-center justify-center transform rotate-3 hover:rotate-0 transition-transform duration-500">
                 <span className="text-5xl">👟</span>
@@ -108,36 +105,31 @@ export default function Home() {
           </div>
         </div>
         
-        {/* Decorative Elements */}
-        <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-gray-50 to-transparent"></div>
+        <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-gray-50 dark:from-gray-900 to-transparent"></div>
       </section>
 
       {/* Featured Products */}
       <section id="featured-products" className="py-24">
         <div className="container mx-auto px-4">
-          {/* Section Header */}
           <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-black mb-4">
-              <span className="bg-gradient-to-r from-black to-gray-600 bg-clip-text text-transparent">
-                Featured Drops
-              </span>
+            <h2 className="text-4xl md:text-5xl font-black mb-4" style={{ color: 'var(--foreground)' }}>
+              Featured Drops
             </h2>
-            <p className="text-gray-600 max-w-2xl mx-auto">
+            <p className="max-w-2xl mx-auto opacity-70">
               The most anticipated releases, hand-picked for your campus style
             </p>
           </div>
 
-          {/* Products Grid */}
           {loading ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
               {[1, 2, 3].map((i) => (
-                <div key={i} className="bg-white rounded-2xl shadow-lg p-6 animate-pulse">
-                  <div className="h-64 bg-gray-200 rounded-xl mb-4"></div>
-                  <div className="h-6 bg-gray-200 rounded w-3/4 mb-2"></div>
-                  <div className="h-4 bg-gray-200 rounded w-1/2 mb-4"></div>
+                <div key={i} className="rounded-2xl shadow-lg p-6 animate-pulse" style={{ backgroundColor: 'var(--card)' }}>
+                  <div className="h-64 rounded-xl mb-4" style={{ backgroundColor: 'var(--card-hover)' }}></div>
+                  <div className="h-6 rounded w-3/4 mb-2" style={{ backgroundColor: 'var(--card-hover)' }}></div>
+                  <div className="h-4 rounded w-1/2 mb-4" style={{ backgroundColor: 'var(--card-hover)' }}></div>
                   <div className="flex justify-between">
-                    <div className="h-8 bg-gray-200 rounded w-20"></div>
-                    <div className="h-8 bg-gray-200 rounded w-20"></div>
+                    <div className="h-8 rounded w-20" style={{ backgroundColor: 'var(--card-hover)' }}></div>
+                    <div className="h-8 rounded w-20" style={{ backgroundColor: 'var(--card-hover)' }}></div>
                   </div>
                 </div>
               ))}
@@ -152,8 +144,8 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Categories with Images */}
-      <section className="py-16 bg-white">
+      {/* Categories */}
+      <section className="py-16" style={{ backgroundColor: 'var(--card)' }}>
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
@@ -161,10 +153,10 @@ export default function Home() {
               { name: 'Lifestyle', icon: '✨', image: 'https://images.unsplash.com/photo-1603808033192-082d6919d3e1?w=400&h=400&fit=crop' },
               { name: 'Basketball', icon: '🏀', image: 'https://images.unsplash.com/photo-1584735175315-9d5df23860e6?w=400&h=400&fit=crop' },
               { name: 'Skateboarding', icon: '🛹', image: 'https://images.unsplash.com/photo-1525966222134-fcfa99b8ae77?w=400&h=400&fit=crop' }
-            ].map((category, i) => (
+            ].map((category) => (
               <button 
                 key={category.name}
-                onClick={() => router.push(`/?category=${category.name.toLowerCase()}`)}
+                onClick={() => router.push(`/products?category=${category.name.toLowerCase()}`)}
                 className="group cursor-pointer"
               >
                 <div className="relative overflow-hidden rounded-2xl aspect-square">

@@ -1,4 +1,3 @@
-// app/products/page.tsx
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -7,7 +6,6 @@ import { collection, getDocs } from 'firebase/firestore';
 import ProductCard from '@/components/ui/ProductCard';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-
 import { Suspense } from 'react';
 
 interface Product {
@@ -24,7 +22,7 @@ interface Product {
 function ProductsContent() {
   const searchParams = useSearchParams();
   const categoryFilter = searchParams.get('category');
-const searchQuery = searchParams.get('search') || '';
+  const searchQuery = searchParams.get('search') || '';
   
   const [products, setProducts] = useState<Product[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
@@ -41,26 +39,23 @@ const searchQuery = searchParams.get('search') || '';
           ...doc.data()
         })) as Product[];
         
-        console.log('📦 Products loaded:', productsData.length);
-        
-        setProducts(productsData);
         let filtered = productsData;
-    if (searchQuery) {
-      filtered = filtered.filter(p => 
-        p.name.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-    }
+        if (searchQuery) {
+          filtered = filtered.filter(p => 
+            p.name.toLowerCase().includes(searchQuery.toLowerCase())
+          );
+        }
         
-        // Extract unique categories
+        setProducts(filtered);
+        
         const uniqueCategories = ['all', ...new Set(productsData.map(p => p.category).filter(Boolean))];
         setCategories(uniqueCategories);
         
-        // Apply filter
         if (categoryFilter && categoryFilter !== 'all') {
           setSelectedCategory(categoryFilter);
-          setFilteredProducts(productsData.filter(p => p.category?.toLowerCase() === categoryFilter?.toLowerCase()));
+          setFilteredProducts(filtered.filter(p => p.category?.toLowerCase() === categoryFilter?.toLowerCase()));
         } else {
-          setFilteredProducts(productsData);
+          setFilteredProducts(filtered);
         }
       } catch (error) {
         console.error('Error fetching products:', error);
@@ -70,7 +65,7 @@ const searchQuery = searchParams.get('search') || '';
     };
 
     fetchProducts();
-  }, [categoryFilter]);
+  }, [categoryFilter, searchQuery]);
 
   const handleCategoryFilter = (category: string) => {
     setSelectedCategory(category);
@@ -83,24 +78,20 @@ const searchQuery = searchParams.get('search') || '';
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-black"></div>
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--background)' }}>
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-black dark:border-white"></div>
       </div>
     );
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-gray-50 to-white py-12">
+    <main className="min-h-screen py-12" style={{ backgroundColor: 'var(--background)' }}>
       <div className="container mx-auto px-4">
-        {/* Header */}
         <div className="text-center mb-12">
-          <h1 className="text-5xl font-black mb-4">All Products</h1>
-          <p className="text-gray-600 max-w-2xl mx-auto">
-            Discover our complete collection of premium sneakers
-          </p>
+          <h1 className="text-5xl font-black mb-4" style={{ color: 'var(--foreground)' }}>All Products</h1>
+          <p className="max-w-2xl mx-auto opacity-70">Discover our complete collection of premium sneakers</p>
         </div>
 
-        {/* Category Filter */}
         <div className="flex flex-wrap justify-center gap-3 mb-12">
           {categories.map((category) => (
             <button
@@ -108,20 +99,24 @@ const searchQuery = searchParams.get('search') || '';
               onClick={() => handleCategoryFilter(category)}
               className={`px-6 py-2 rounded-full font-semibold transition-all duration-300 ${
                 selectedCategory === category
-                  ? 'bg-black text-white shadow-lg'
-                  : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
+                  ? 'bg-black dark:bg-white text-white dark:text-black shadow-lg'
+                  : 'border hover:bg-gray-100 dark:hover:bg-gray-800'
               }`}
+              style={{
+                backgroundColor: selectedCategory === category ? 'var(--primary)' : 'var(--card)',
+                color: selectedCategory === category ? 'var(--background)' : 'var(--foreground)',
+                borderColor: 'var(--border)'
+              }}
             >
               {category === 'all' ? 'All' : category}
             </button>
           ))}
         </div>
 
-        {/* Products Grid */}
         {filteredProducts.length === 0 ? (
           <div className="text-center py-20">
-            <p className="text-gray-500 text-lg">No products found.</p>
-            <Link href="/admin/products/add" className="text-black underline mt-4 inline-block">
+            <p className="opacity-70 text-lg">No products found.</p>
+            <Link href="/admin/products/add" className="underline mt-4 inline-block" style={{ color: 'var(--foreground)' }}>
               Add your first product →
             </Link>
           </div>
@@ -139,7 +134,7 @@ const searchQuery = searchParams.get('search') || '';
 
 export default function ProductsPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-black"></div></div>}>
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--background)' }}><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-black dark:border-white"></div></div>}>
       <ProductsContent />
     </Suspense>
   );

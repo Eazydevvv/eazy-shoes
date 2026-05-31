@@ -31,7 +31,6 @@ function DashboardContent() {
 
     const [user, setUser] = useState<any>(null);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
     const [orders, setOrders] = useState<Order[]>([]);
     const [referralCount, setReferralCount] = useState(0);
     const [totalEarnings, setTotalEarnings] = useState(0);
@@ -144,11 +143,8 @@ function DashboardContent() {
                 });
             });
             setProducts(productsData);
-            
-            setError(null);
         } catch (err: any) {
             console.error('Error fetching user data:', err);
-            setError(err.message);
         }
     };
 
@@ -197,167 +193,97 @@ function DashboardContent() {
 
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-black"></div>
+            <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--background)' }}>
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-black dark:border-white"></div>
             </div>
         );
     }
 
-    if (error) {
-        return (
-            <div className="min-h-screen flex items-center justify-center">
-                <div className="text-center">
-                    <p className="text-red-500 mb-4">Error: {error}</p>
-                    <button 
-                        onClick={() => window.location.reload()} 
-                        className="bg-black text-white px-4 py-2 rounded"
-                    >
-                        Refresh Page
-                    </button>
-                </div>
-            </div>
-        );
-    }
-
-    if (!user) {
-        return (
-            <div className="min-h-screen flex items-center justify-center">
-                <div className="text-center">
-                    <p className="text-gray-500 mb-4">Please log in to view dashboard</p>
-                    <Link href="/auth" className="bg-black text-white px-4 py-2 rounded">
-                        Go to Login
-                    </Link>
-                </div>
-            </div>
-        );
-    }
+    if (!user) return null;
 
     const getStatusBadge = (status: string) => {
         switch (status) {
-            case 'paid': return 'bg-green-100 text-green-700';
-            case 'pending': return 'bg-yellow-100 text-yellow-700';
-            case 'delivered': return 'bg-blue-100 text-blue-700';
-            default: return 'bg-gray-100 text-gray-700';
+            case 'paid': return 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300';
+            case 'pending': return 'bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-300';
+            case 'delivered': return 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300';
+            default: return 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300';
         }
     };
 
     return (
-        <main className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 py-12">
+        <main className="min-h-screen py-12" style={{ backgroundColor: 'var(--background)' }}>
             <div className="container mx-auto px-4">
-                <div className="max-w-7xl mx-auto">
+                <div className="max-w-6xl mx-auto">
                     {/* Header */}
-                    <div className="flex items-center justify-between mb-8">
-                        <div className="flex items-center gap-4">
-                            <div className="w-16 h-16 bg-gradient-to-r from-black to-gray-700 rounded-full flex items-center justify-center shadow-lg">
-                                <span className="text-3xl">{user?.email?.[0]?.toUpperCase() || '👤'}</span>
-                            </div>
-                            <div>
-                                <h1 className="text-3xl font-bold">Welcome back, {user?.displayName || user?.email?.split('@')[0] || 'Sneakerhead'}! 👟</h1>
-                                <p className="text-gray-500 text-sm mt-1">{user?.email}</p>
-                                <p className="text-xs text-gray-400 mt-1">Referral code: <span className="font-mono font-bold bg-gray-100 px-2 py-0.5 rounded">{referralCode}</span></p>
-                            </div>
-                        </div>
+                    <div className="mb-8">
+                        <h1 className="text-3xl font-bold" style={{ color: 'var(--foreground)' }}>Dashboard</h1>
+                        <p className="opacity-70 text-sm mt-1">Welcome back, {user?.displayName || user?.email?.split('@')[0]}</p>
+                        <p className="text-xs opacity-50 mt-1">Referral code: <span className="font-mono font-bold">{referralCode}</span></p>
                     </div>
 
                     {/* Stats Grid */}
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-                        <div className="bg-white rounded-2xl shadow-md p-5">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-gray-500 text-sm">Total Orders</p>
-                                    <p className="text-2xl font-bold mt-1">{orders.length}</p>
-                                </div>
-                                <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                                    <span className="text-2xl">📦</span>
-                                </div>
-                            </div>
+                        <div className="rounded-lg shadow p-5" style={{ backgroundColor: 'var(--card)' }}>
+                            <p className="text-sm opacity-70">Orders</p>
+                            <p className="text-2xl font-bold" style={{ color: 'var(--foreground)' }}>{orders.length}</p>
                         </div>
-
-                        <div className="bg-white rounded-2xl shadow-md p-5">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-gray-500 text-sm">Referrals</p>
-                                    <p className="text-2xl font-bold mt-1">{referralCount}</p>
-                                </div>
-                                <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
-                                    <span className="text-2xl">🤝</span>
-                                </div>
-                            </div>
+                        <div className="rounded-lg shadow p-5" style={{ backgroundColor: 'var(--card)' }}>
+                            <p className="text-sm opacity-70">Referrals</p>
+                            <p className="text-2xl font-bold" style={{ color: 'var(--foreground)' }}>{referralCount}</p>
                         </div>
-
-                        <div className="bg-white rounded-2xl shadow-md p-5">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-gray-500 text-sm">Balance</p>
-                                    <p className="text-2xl font-bold text-green-600 mt-1">₦{totalEarnings.toLocaleString()}</p>
-                                </div>
-                                <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-                                    <span className="text-2xl">💰</span>
-                                </div>
-                            </div>
+                        <div className="rounded-lg shadow p-5" style={{ backgroundColor: 'var(--card)' }}>
+                            <p className="text-sm opacity-70">Balance</p>
+                            <p className="text-2xl font-bold text-green-600 dark:text-green-400">₦{totalEarnings.toLocaleString()}</p>
                         </div>
-
-                        <div className="bg-white rounded-2xl shadow-md p-5">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-gray-500 text-sm">Pending</p>
-                                    <p className="text-2xl font-bold text-yellow-600 mt-1">₦{pendingWithdrawal.toLocaleString()}</p>
-                                </div>
-                                <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center">
-                                    <span className="text-2xl">⏳</span>
-                                </div>
-                            </div>
+                        <div className="rounded-lg shadow p-5" style={{ backgroundColor: 'var(--card)' }}>
+                            <p className="text-sm opacity-70">Pending</p>
+                            <p className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">₦{pendingWithdrawal.toLocaleString()}</p>
                         </div>
                     </div>
 
                     {/* Withdrawal Section */}
-                    <div className="bg-gradient-to-r from-green-600 to-green-700 text-white rounded-2xl shadow-lg p-6 mb-8">
+                    <div className="rounded-lg shadow p-6 mb-8" style={{ backgroundColor: 'var(--card)' }}>
                         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                             <div>
-                                <p className="text-sm opacity-80">Available Balance</p>
-                                <p className="text-4xl font-bold mt-1">₦{totalEarnings.toLocaleString()}</p>
-                                <p className="text-sm mt-2 opacity-80">Min withdrawal: ₦50 | Fee: ₦100</p>
+                                <p className="text-sm opacity-70">Available Balance</p>
+                                <p className="text-3xl font-bold text-green-600 dark:text-green-400">₦{totalEarnings.toLocaleString()}</p>
+                                <p className="text-xs opacity-50 mt-1">Min: ₦50 | Fee: ₦100</p>
                             </div>
                             <Link
                                 href="/dashboard/withdraw"
-                                className={`px-6 py-3 rounded-xl font-semibold transition ${
+                                className={`px-6 py-3 rounded-lg font-semibold transition ${
                                     totalEarnings >= 150 
-                                        ? 'bg-yellow-500 text-black hover:bg-yellow-400' 
-                                        : 'bg-gray-500 text-gray-300 cursor-not-allowed pointer-events-none'
+                                        ? 'bg-black dark:bg-white text-white dark:text-black hover:opacity-80' 
+                                        : 'bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed pointer-events-none'
                                 }`}
                             >
-                                {totalEarnings >= 150 ? '💸 Withdraw Now' : `Need ₦150 (₦50 + ₦100 fee)`}
+                                {totalEarnings >= 150 ? 'Withdraw' : `Need ₦150`}
                             </Link>
                         </div>
-                        <div className="mt-4">
-                            <button
-                                onClick={handleShowHistory}
-                                className="text-sm text-white/80 hover:text-white"
-                            >
-                                {showWithdrawalHistory ? '▼ Hide Withdrawal History' : '▶ View Withdrawal History'}
-                            </button>
-                        </div>
+                        <button
+                            onClick={handleShowHistory}
+                            className="text-sm opacity-60 hover:opacity-100 mt-4 transition"
+                        >
+                            {showWithdrawalHistory ? '▼ Hide History' : '▶ View History'}
+                        </button>
                     </div>
 
                     {/* Withdrawal History */}
                     {showWithdrawalHistory && withdrawals.length > 0 && (
-                        <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
-                            <h2 className="text-xl font-bold mb-4">📋 Withdrawal History</h2>
+                        <div className="rounded-lg shadow p-6 mb-8" style={{ backgroundColor: 'var(--card)' }}>
+                            <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--foreground)' }}>Withdrawal History</h2>
                             <div className="space-y-3">
                                 {withdrawals.map((w, idx) => (
-                                    <div key={`${w.id}-${idx}`} className="flex justify-between items-center p-4 border border-gray-100 rounded-xl">
+                                    <div key={`${w.id}-${idx}`} className="flex justify-between items-center p-3 rounded-lg border" style={{ borderColor: 'var(--border)' }}>
                                         <div>
                                             <p className="font-semibold">₦{w.amount.toLocaleString()}</p>
-                                            {w.fee && w.fee > 0 && <p className="text-xs text-gray-400">Fee: ₦{w.fee}</p>}
-                                            <p className="text-sm text-gray-500">
+                                            <p className="text-xs opacity-50">
                                                 {w.requestedAt?.toDate ? new Date(w.requestedAt.toDate()).toLocaleDateString() : 'Just now'}
                                             </p>
                                         </div>
-                                        <div className="text-right">
-                                            <span className={`px-3 py-1 rounded-full text-sm ${getStatusBadge(w.status)}`}>
-                                                {w.status === 'pending' ? '⏳ Pending' : w.status === 'paid' ? '✅ Paid' : '❌ Failed'}
-                                            </span>
-                                        </div>
+                                        <span className={`px-2 py-1 rounded text-xs ${getStatusBadge(w.status)}`}>
+                                            {w.status}
+                                        </span>
                                     </div>
                                 ))}
                             </div>
@@ -365,15 +291,16 @@ function DashboardContent() {
                     )}
 
                     {/* Referral Link Card */}
-                    <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-2xl shadow-lg p-6 mb-8">
-                        <h2 className="text-xl font-bold mb-3">🎯 Share a Specific Shoe</h2>
-                        <p className="text-sm mb-4">💰 When someone buys this shoe using your link, you earn ₦2,000 per shoe!</p>
+                    <div className="rounded-lg shadow p-6 mb-8" style={{ backgroundColor: 'var(--card)' }}>
+                        <h2 className="text-lg font-semibold mb-2" style={{ color: 'var(--foreground)' }}>Share a Shoe</h2>
+                        <p className="text-sm opacity-70 mb-4">You earn ₦2,000 per shoe when someone buys using your link.</p>
 
                         <div className="flex flex-col sm:flex-row gap-3">
                             <select
                                 value={selectedProduct}
                                 onChange={(e) => setSelectedProduct(e.target.value)}
-                                className="flex-1 px-4 py-3 rounded-xl text-black bg-white"
+                                className="flex-1 px-4 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white"
+                                style={{ backgroundColor: 'var(--background)', borderColor: 'var(--border)', color: 'var(--foreground)' }}
                             >
                                 <option value="">Select a product...</option>
                                 {products.map((product) => (
@@ -386,27 +313,24 @@ function DashboardContent() {
                             <button
                                 onClick={copyProductLink}
                                 disabled={!selectedProduct}
-                                className="bg-black text-white px-6 py-3 rounded-xl font-semibold hover:bg-gray-800 transition disabled:opacity-50"
+                                className="bg-black dark:bg-white text-white dark:text-black px-6 py-2 rounded-lg font-medium hover:opacity-80 transition disabled:opacity-50"
                             >
-                                {productLinkCopied ? '✅ Copied!' : '📋 Copy Link'}
+                                {productLinkCopied ? 'Copied!' : 'Copy Link'}
                             </button>
                         </div>
 
                         {selectedProductData && (
-                            <div className="mt-4 bg-white/10 rounded-xl p-3">
-                                <p className="text-xs break-all">
-                                    Link: <span className="font-mono">{getProductReferralLink(selectedProduct)}</span>
-                                </p>
-                                <p className="text-sm mt-2 text-yellow-200">
-                                    💰 When someone buys this shoe using your link, you earn ₦2,000 per shoe!
+                            <div className="mt-4 p-3 rounded-lg" style={{ backgroundColor: 'var(--background)' }}>
+                                <p className="text-xs opacity-70 break-all">
+                                    Link: {getProductReferralLink(selectedProduct)}
                                 </p>
                                 {selectedProductData.images?.[0] && (
                                     <a
                                         href={selectedProductData.images[0]}
-                                        download={`${selectedProductData.name.replace(/\s/g, '-')}.jpg`}
-                                        className="inline-block mt-3 bg-white/20 hover:bg-white/30 text-white px-3 py-1 rounded-lg text-xs transition"
+                                        download
+                                        className="inline-block mt-2 text-xs underline opacity-70 hover:opacity-100"
                                     >
-                                        📥 Download Image
+                                        Download Image
                                     </a>
                                 )}
                             </div>
@@ -414,32 +338,24 @@ function DashboardContent() {
                     </div>
 
                     {/* Recent Orders */}
-                    <div className="bg-white rounded-2xl shadow-lg p-6">
-                        <div className="flex justify-between items-center mb-6">
-                            <h2 className="text-xl font-bold">📦 Recent Orders</h2>
-                            <Link href="/orders" className="text-sm text-gray-500 hover:text-black">View All →</Link>
-                        </div>
+                    <div className="rounded-lg shadow p-6" style={{ backgroundColor: 'var(--card)' }}>
+                        <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--foreground)' }}>Recent Orders</h2>
 
                         {orders.length === 0 ? (
-                            <div className="text-center py-8">
-                                <p className="text-gray-500 mb-4">No orders yet.</p>
-                                <Link href="/products" className="text-black underline">
-                                    Start Shopping →
-                                </Link>
-                            </div>
+                            <p className="text-center py-4 opacity-70">No orders yet.</p>
                         ) : (
                             <div className="space-y-3">
                                 {orders.map((order, idx) => (
-                                    <div key={`${order.id}-${idx}`} className="flex justify-between items-center p-4 border border-gray-100 rounded-xl hover:shadow-sm transition">
+                                    <div key={`${order.id}-${idx}`} className="flex justify-between items-center p-3 rounded-lg border" style={{ borderColor: 'var(--border)' }}>
                                         <div>
                                             <p className="font-medium">{order.products?.[0]?.productName || 'Product'}</p>
-                                            <p className="text-sm text-gray-500">
+                                            <p className="text-xs opacity-50">
                                                 {order.createdAt?.toDate ? new Date(order.createdAt.toDate()).toLocaleDateString() : 'Just now'}
                                             </p>
                                         </div>
                                         <div className="text-right">
-                                            <p className="font-bold">₦{order.totalAmount?.toLocaleString()}</p>
-                                            <span className={`text-xs px-2 py-1 rounded-full ${getStatusBadge(order.status || 'pending')}`}>
+                                            <p className="font-semibold">₦{order.totalAmount?.toLocaleString()}</p>
+                                            <span className={`text-xs px-2 py-1 rounded ${getStatusBadge(order.status || 'pending')}`}>
                                                 {order.status || 'pending'}
                                             </span>
                                         </div>
@@ -457,8 +373,8 @@ function DashboardContent() {
 export default function DashboardPage() {
     return (
         <Suspense fallback={
-            <div className="min-h-screen flex items-center justify-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-black"></div>
+            <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--background)' }}>
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-black dark:border-white"></div>
             </div>
         }>
             <DashboardContent />

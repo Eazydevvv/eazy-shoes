@@ -44,6 +44,9 @@ function CheckoutContent() {
     ? cartItems.reduce((sum, item) => sum + (COMMISSION_PER_SHOE * item.quantity), 0)
     : 0;
 
+  // Check if there's actually a referral in the URL
+  const hasReferralInUrl = searchParams.get('ref') !== null;
+
   useEffect(() => {
     const urlRef = searchParams.get('ref');
     const savedCart = sessionStorage.getItem('checkoutCart');
@@ -56,19 +59,12 @@ function CheckoutContent() {
       return;
     }
 
-    let finalRef = urlRef;
-    if (!finalRef && cartItems[0]?.referralCode) {
-      finalRef = cartItems[0].referralCode;
-    }
-    if (!finalRef) {
-      finalRef = localStorage.getItem('pendingReferral');
-    }
-
-    if (finalRef) {
-      setRefCode(finalRef);
+    // Only set referral code if it came from URL
+    if (urlRef) {
+      setRefCode(urlRef);
       const findReferrer = async () => {
         try {
-          const usersQuery = query(collection(db, 'users'), where('referralCode', '==', finalRef));
+          const usersQuery = query(collection(db, 'users'), where('referralCode', '==', urlRef));
           const usersSnapshot = await getDocs(usersQuery);
           if (!usersSnapshot.empty) {
             const referrer = usersSnapshot.docs[0];
@@ -127,7 +123,6 @@ function CheckoutContent() {
 
       await addDoc(collection(db, 'orders'), orderData);
 
-      // Update referrer's earnings
       if (refCode && referrerId) {
         const referrerRef = doc(db, 'users', referrerId);
         const referrerDoc = await getDoc(referrerRef);
@@ -162,13 +157,14 @@ function CheckoutContent() {
   if (!user) return null;
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-gray-50 to-white py-12">
+    <main className="min-h-screen style={{ backgroundColor: 'var(--background)'">
       <div className="container mx-auto px-4">
         <div className="max-w-3xl mx-auto">
           <div className="text-center mb-8">
             <h1 className="text-4xl font-black mb-2">Checkout</h1>
             <p className="text-gray-600">Complete your payment to order</p>
-            {refCode && (
+            {/* Only show referral banner if URL actually has ref parameter */}
+            {hasReferralInUrl && refCode && (
               <div className="bg-green-50 border border-green-200 rounded-xl p-4 mt-4">
                 <p className="text-green-700 font-semibold">
                   🎉 You're shopping through a referral link!
@@ -249,7 +245,7 @@ function CheckoutContent() {
                   <span>Total</span>
                   <span>₦{totalAmount.toLocaleString()}</span>
                 </div>
-                {refCode && (
+                {refCode && hasReferralInUrl && (
                   <div className="flex justify-between text-sm text-green-600 mt-2">
                     <span>Referral commission:</span>
                     <span>+ ₦{totalCommission.toLocaleString()}</span>
