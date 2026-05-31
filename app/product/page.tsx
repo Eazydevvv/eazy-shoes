@@ -76,7 +76,7 @@ function ProductsContent() {
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-gray-50 to-white py-12">
+    <main className="min-h-screen bstyle={{ backgroundColor: 'var(--background)' }}">
       <div className="container mx-auto px-4">
         <div className="text-center mb-12">
           <h1 className="text-5xl font-black mb-4">All Products</h1>
