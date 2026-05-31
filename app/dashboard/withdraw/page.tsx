@@ -101,7 +101,7 @@ export default function WithdrawPage() {
   }
 
   return (
-    <main className="min-h-screen style={{ backgroundColor: 'var(--background)' }}">
+    <main className="min-h-screen" style={{ backgroundColor: 'var(--background)' }}>
       <div className="container mx-auto px-4">
         <div className="max-w-md mx-auto">
           <Link href="/dashboard" className="inline-flex items-center text-gray-500 hover:text-black mb-6">
