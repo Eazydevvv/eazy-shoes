@@ -62,79 +62,83 @@ function AuthContent() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8" style={{ backgroundColor: 'var(--background)' }}>
       <div className="max-w-md w-full">
         <div className="text-center mb-8">
           <div className="flex justify-center mb-4">
-            <div className="w-24 h-24 bg-gradient-to-br from-black to-gray-700 rounded-2xl rotate-45 transform hover:rotate-0 transition-all duration-500 shadow-xl flex items-center justify-center">
+            <div className="w-24 h-24 bg-gradient-to-br from-black to-gray-700 dark:from-white dark:to-gray-400 rounded-2xl rotate-45 transform hover:rotate-0 transition-all duration-500 shadow-xl flex items-center justify-center">
               <span className="-rotate-45 text-4xl">👟</span>
             </div>
           </div>
-          <h2 className="text-4xl font-black bg-gradient-to-r from-black to-gray-600 bg-clip-text text-transparent">EAZY</h2>
-          <p className="text-gray-600 mt-2">
+          <h2 className="text-4xl font-black bg-gradient-to-r from-black to-gray-600 dark:from-white dark:to-gray-400 bg-clip-text text-transparent">EAZY</h2>
+          <p className="mt-2 opacity-70">
             {isLogin ? 'Welcome back! Please sign in to continue.' : 'Join the EAZY community and start earning.'}
           </p>
         </div>
 
-        <div className="bg-white/80 backdrop-blur-lg rounded-3xl shadow-2xl p-8 border border-gray-100">
-          <div className="flex bg-gray-100 p-1 rounded-2xl mb-8">
+        <div className="backdrop-blur-lg rounded-3xl shadow-2xl p-8 border" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)' }}>
+          <div className="flex rounded-2xl p-1 mb-8" style={{ backgroundColor: 'var(--background)' }}>
             <button
               onClick={() => setIsLogin(true)}
               className={`flex-1 py-3 rounded-xl font-semibold transition-all duration-300 ${
-                isLogin ? 'bg-white text-black shadow-lg' : 'text-gray-600 hover:text-black'
+                isLogin ? 'bg-black dark:bg-white text-white dark:text-black shadow-lg' : 'opacity-70 hover:opacity-100'
               }`}
+              style={!isLogin ? { color: 'var(--foreground)' } : {}}
             >
               Sign In
             </button>
             <button
               onClick={() => setIsLogin(false)}
               className={`flex-1 py-3 rounded-xl font-semibold transition-all duration-300 ${
-                !isLogin ? 'bg-white text-black shadow-lg' : 'text-gray-600 hover:text-black'
+                !isLogin ? 'bg-black dark:bg-white text-white dark:text-black shadow-lg' : 'opacity-70 hover:opacity-100'
               }`}
+              style={isLogin ? { color: 'var(--foreground)' } : {}}
             >
               Sign Up
             </button>
           </div>
 
           {error && (
-            <div className="mb-6 bg-red-50 border-l-4 border-red-500 p-4 rounded-lg">
-              <p className="text-sm text-red-600">{error}</p>
+            <div className="mb-6 p-4 rounded-lg" style={{ backgroundColor: '#fee2e2', color: '#dc2626' }}>
+              <p className="text-sm">{error}</p>
             </div>
           )}
           {success && (
-            <div className="mb-6 bg-green-50 border-l-4 border-green-500 p-4 rounded-lg">
-              <p className="text-sm text-green-600">{success}</p>
+            <div className="mb-6 p-4 rounded-lg" style={{ backgroundColor: '#dcfce7', color: '#16a34a' }}>
+              <p className="text-sm">{success}</p>
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
+              <label className="block text-sm font-medium mb-2" style={{ color: 'var(--foreground)' }}>Email Address</label>
               <input
                 type="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-black focus:ring-2 focus:ring-black/20 outline-none"
+                className="w-full px-4 py-3 rounded-xl border focus:ring-2 outline-none"
+                style={{ backgroundColor: 'var(--background)', borderColor: 'var(--border)', color: 'var(--foreground)' }}
                 placeholder="you@example.com"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
+              <label className="block text-sm font-medium mb-2" style={{ color: 'var(--foreground)' }}>Password</label>
               <input
                 type="password"
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-black focus:ring-2 focus:ring-black/20 outline-none"
+                className="w-full px-4 py-3 rounded-xl border focus:ring-2 outline-none"
+                style={{ backgroundColor: 'var(--background)', borderColor: 'var(--border)', color: 'var(--foreground)' }}
                 placeholder="••••••••"
               />
             </div>
 
             {isLogin && (
               <div className="flex items-center justify-end">
-                <Link href="/auth/forgot-password" className="text-sm text-gray-600 hover:text-black">
+                <Link href="/auth/forgot-password" className="text-sm opacity-70 hover:opacity-100 transition" style={{ color: 'var(--foreground)' }}>
                   Forgot password?
                 </Link>
               </div>
@@ -143,15 +147,16 @@ function AuthContent() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-black text-white py-4 rounded-xl font-semibold hover:bg-gray-800 transition disabled:opacity-50"
+              className="w-full py-4 rounded-xl font-semibold transition disabled:opacity-50"
+              style={{ backgroundColor: 'var(--primary)', color: 'var(--background)' }}
             >
               {loading ? 'Processing...' : isLogin ? 'Sign In' : 'Create Account'}
             </button>
           </form>
 
-          <p className="mt-6 text-center text-xs text-gray-500">
+          <p className="mt-6 text-center text-xs opacity-50">
             By continuing, you agree to EAZY's{' '}
-            <Link href="#" className="text-black hover:underline">Terms of Service</Link>
+            <Link href="#" className="underline hover:opacity-100" style={{ color: 'var(--foreground)' }}>Terms of Service</Link>
           </p>
         </div>
       </div>
@@ -162,8 +167,8 @@ function AuthContent() {
 export default function AuthPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-black"></div>
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--background)' }}>
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-black dark:border-white"></div>
       </div>
     }>
       <AuthContent />
