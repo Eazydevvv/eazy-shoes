@@ -21,7 +21,9 @@ function InfluencerDashboardContent() {
   const [profileUrl, setProfileUrl] = useState('');
   const [referralLink, setReferralLink] = useState('');
 
+  // This runs once on the client AFTER hydration
   useEffect(() => {
+    // Set the URLs only on the client
     if (typeof window !== 'undefined') {
       setReferralLink(`${window.location.origin}/?ref=${referralCode}`);
       if (influencerData?.influencerName) {
@@ -52,6 +54,7 @@ function InfluencerDashboardContent() {
         const code = data.referralCode || user.uid.slice(0, 6).toUpperCase();
         setReferralCode(code);
 
+        // Get all users who signed up using this referral code
         const usersQuery = query(
           collection(db, 'users'),
           where('referredBy', '==', code)
@@ -61,6 +64,7 @@ function InfluencerDashboardContent() {
         
         setTotalReferred(referredUsers.length);
 
+        // Get orders from referrals
         const ordersQuery = query(
           collection(db, 'orders'),
           where('referralCode', '==', code),
@@ -81,6 +85,7 @@ function InfluencerDashboardContent() {
     return () => unsubscribe();
   }, [router]);
 
+  // Don't render anything until we have data
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--background)' }}>
@@ -106,12 +111,14 @@ function InfluencerDashboardContent() {
     <main className="min-h-screen py-12" style={{ backgroundColor: 'var(--background)' }}>
       <div className="container mx-auto px-4">
         <div className="max-w-4xl mx-auto">
+          {/* Header */}
           <div className="mb-8">
             <h1 className="text-3xl font-bold" style={{ color: 'var(--foreground)' }}>Influencer Dashboard</h1>
             <p className="opacity-70 mt-1">Welcome, {influencerData?.influencerName || user?.email}</p>
             <p className="text-xs opacity-50 mt-1">Your referral code: <span className="font-mono font-bold">{referralCode}</span></p>
           </div>
 
+          {/* Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mb-8">
             <div className="rounded-2xl p-4 md:p-6 shadow-lg text-center" style={{ backgroundColor: 'var(--card)' }}>
               <p className="text-sm opacity-70">Total Referred</p>
@@ -131,7 +138,8 @@ function InfluencerDashboardContent() {
             </div>
           </div>
 
-          {profileUrl && (
+          {/* Profile Link - Only show after client side renders */}
+          {typeof window !== 'undefined' && profileUrl && (
             <div className="rounded-2xl p-6 mb-8 shadow-lg" style={{ backgroundColor: 'var(--card)' }}>
               <h2 className="text-xl font-bold mb-3" style={{ color: 'var(--foreground)' }}>📱 Your Public Profile</h2>
               <p className="text-sm opacity-70 mb-3">Share this link with your audience:</p>
@@ -159,7 +167,8 @@ function InfluencerDashboardContent() {
             </div>
           )}
 
-          {referralLink && (
+          {/* Referral Link - Only show after client side renders */}
+          {typeof window !== 'undefined' && referralLink && (
             <div className="rounded-2xl p-6 mb-8 shadow-lg" style={{ backgroundColor: 'var(--card)' }}>
               <h2 className="text-xl font-bold mb-3" style={{ color: 'var(--foreground)' }}>🔗 Your Referral Link</h2>
               <p className="text-sm opacity-70 mb-4">Share this link with your audience. You earn ₦2,000 per shoe sold!</p>
@@ -189,6 +198,7 @@ function InfluencerDashboardContent() {
             </div>
           )}
 
+          {/* Withdraw Button */}
           {totalEarnings >= 50 && (
             <div className="rounded-2xl p-6 mb-8 shadow-lg text-center" style={{ backgroundColor: 'var(--card)' }}>
               <h2 className="text-xl font-bold mb-3" style={{ color: 'var(--foreground)' }}>💰 Withdraw Earnings</h2>
@@ -206,6 +216,7 @@ function InfluencerDashboardContent() {
             </div>
           )}
 
+          {/* Referral Orders */}
           <div className="rounded-2xl p-6 shadow-lg" style={{ backgroundColor: 'var(--card)' }}>
             <h2 className="text-xl font-bold mb-4" style={{ color: 'var(--foreground)' }}>📋 Recent Referrals</h2>
             {referrals.length === 0 ? (
