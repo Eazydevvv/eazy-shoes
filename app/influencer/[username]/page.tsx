@@ -22,6 +22,7 @@ function InfluencerDashboardContent() {
   const [referralLink, setReferralLink] = useState('');
 
   useEffect(() => {
+    // Only run on the client
     if (typeof window !== 'undefined') {
       setReferralLink(`${window.location.origin}/?ref=${referralCode}`);
       if (influencerData?.influencerName) {
@@ -131,7 +132,7 @@ function InfluencerDashboardContent() {
             </div>
           </div>
 
-          {/* Profile Link - Only render if profileUrl exists */}
+          {/* Profile Link */}
           {profileUrl && (
             <div className="rounded-2xl p-6 mb-8 shadow-lg" style={{ backgroundColor: 'var(--card)' }}>
               <h2 className="text-xl font-bold mb-3" style={{ color: 'var(--foreground)' }}>📱 Your Public Profile</h2>
@@ -160,7 +161,7 @@ function InfluencerDashboardContent() {
             </div>
           )}
 
-          {/* Referral Link - Only render if referralLink exists */}
+          {/* Referral Link */}
           {referralLink && (
             <div className="rounded-2xl p-6 mb-8 shadow-lg" style={{ backgroundColor: 'var(--card)' }}>
               <h2 className="text-xl font-bold mb-3" style={{ color: 'var(--foreground)' }}>🔗 Your Referral Link</h2>
@@ -236,7 +237,10 @@ function InfluencerDashboardContent() {
   );
 }
 
-// Use dynamic import with ssr: false to completely skip server-side rendering
-export default dynamic(() => Promise.resolve(InfluencerDashboardContent), {
-  ssr: false
-});
+// 🔑 THIS IS THE CRITICAL PART - Disable SSR completely
+const InfluencerDashboard = dynamic(
+  () => Promise.resolve(InfluencerDashboardContent),
+  { ssr: false }
+);
+
+export default InfluencerDashboard;
