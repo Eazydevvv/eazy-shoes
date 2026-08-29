@@ -18,12 +18,6 @@ export default function InfluencerDashboard() {
   const [copied, setCopied] = useState(false);
   const [totalReferred, setTotalReferred] = useState(0);
   const [profileUrl, setProfileUrl] = useState('');
-  const [isMounted, setIsMounted] = useState(false);
-
-  // This runs once on client mount
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -47,8 +41,8 @@ export default function InfluencerDashboard() {
         const code = data.referralCode || user.uid.slice(0, 6).toUpperCase();
         setReferralCode(code);
 
-        // Set profile URL - only on client
-        if (data.influencerName && typeof window !== 'undefined') {
+        // Set profile URL - use window only if available
+        if (typeof window !== 'undefined' && data.influencerName) {
           setProfileUrl(`${window.location.origin}/influencer/${data.influencerName}`);
         }
 
@@ -59,9 +53,6 @@ export default function InfluencerDashboard() {
         );
         const usersSnapshot = await getDocs(usersQuery);
         const referredUsers = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        
-        console.log('👥 Users referred:', referredUsers.length);
-        console.log('📋 Referred users:', referredUsers.map(u => u.email));
         
         // Total people referred
         setTotalReferred(referredUsers.length);
@@ -77,9 +68,6 @@ export default function InfluencerDashboard() {
         setReferrals(orders);
         setTotalEarnings(orders.length * 2000);
 
-        console.log('📦 Orders from referrals:', orders.length);
-        console.log('💰 Total earnings:', orders.length * 2000);
-
         setLoading(false);
       } catch (error) {
         console.error('Error loading influencer data:', error);
@@ -94,13 +82,6 @@ export default function InfluencerDashboard() {
   const getReferralLink = () => {
     if (typeof window === 'undefined') return '';
     return `${window.location.origin}/?ref=${referralCode}`;
-  };
-
-  // Build profile URL - only on client
-  const getProfileUrl = () => {
-    if (typeof window === 'undefined') return '';
-    if (!influencerData?.influencerName) return '';
-    return `${window.location.origin}/influencer/${influencerData.influencerName}`;
   };
 
   if (loading) {
@@ -123,8 +104,6 @@ export default function InfluencerDashboard() {
       </div>
     );
   }
-
-  const displayProfileUrl = getProfileUrl();
 
   return (
     <main className="min-h-screen py-12" style={{ backgroundColor: 'var(--background)' }}>
@@ -158,22 +137,24 @@ export default function InfluencerDashboard() {
           </div>
 
           {/* Profile Link */}
-          {isMounted && displayProfileUrl && (
+          {profileUrl && (
             <div className="rounded-2xl p-6 mb-8 shadow-lg" style={{ backgroundColor: 'var(--card)' }}>
               <h2 className="text-xl font-bold mb-3" style={{ color: 'var(--foreground)' }}>📱 Your Public Profile</h2>
               <p className="text-sm opacity-70 mb-3">Share this link with your audience:</p>
               <div className="flex flex-col sm:flex-row gap-3">
                 <input
                   type="text"
-                  value={displayProfileUrl}
+                  value={profileUrl}
                   readOnly
                   className="flex-1 px-4 py-3 rounded-xl border focus:outline-none"
                   style={{ backgroundColor: 'var(--background)', borderColor: 'var(--border)', color: 'var(--foreground)' }}
                 />
                 <button
                   onClick={() => {
-                    navigator.clipboard.writeText(displayProfileUrl);
-                    alert('✅ Profile link copied!');
+                    if (typeof navigator !== 'undefined') {
+                      navigator.clipboard.writeText(profileUrl);
+                      alert('✅ Profile link copied!');
+                    }
                   }}
                   className="px-6 py-3 rounded-xl font-semibold transition"
                   style={{ backgroundColor: 'var(--primary)', color: 'var(--background)' }}
@@ -198,9 +179,11 @@ export default function InfluencerDashboard() {
               />
               <button
                 onClick={() => {
-                  navigator.clipboard.writeText(getReferralLink());
-                  setCopied(true);
-                  setTimeout(() => setCopied(false), 2000);
+                  if (typeof navigator !== 'undefined') {
+                    navigator.clipboard.writeText(getReferralLink());
+                    setCopied(true);
+                    setTimeout(() => setCopied(false), 2000);
+                  }
                 }}
                 className="px-6 py-3 rounded-xl font-semibold transition"
                 style={{ backgroundColor: 'var(--primary)', color: 'var(--background)' }}
