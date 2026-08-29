@@ -18,6 +18,19 @@ export default function InfluencerDashboard() {
   const [copied, setCopied] = useState(false);
   const [totalReferred, setTotalReferred] = useState(0);
   const [profileUrl, setProfileUrl] = useState('');
+  const [referralLink, setReferralLink] = useState('');
+  const [isMounted, setIsMounted] = useState(false);
+
+  // Set mounted state on client
+  useEffect(() => {
+    setIsMounted(true);
+    if (typeof window !== 'undefined') {
+      setReferralLink(`${window.location.origin}/?ref=${referralCode}`);
+      if (influencerData?.influencerName) {
+        setProfileUrl(`${window.location.origin}/influencer/${influencerData.influencerName}`);
+      }
+    }
+  }, [referralCode, influencerData]);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -40,11 +53,6 @@ export default function InfluencerDashboard() {
         
         const code = data.referralCode || user.uid.slice(0, 6).toUpperCase();
         setReferralCode(code);
-
-        // Set profile URL - use window only if available
-        if (typeof window !== 'undefined' && data.influencerName) {
-          setProfileUrl(`${window.location.origin}/influencer/${data.influencerName}`);
-        }
 
         // Get all users who signed up using this referral code
         const usersQuery = query(
@@ -78,12 +86,6 @@ export default function InfluencerDashboard() {
     return () => unsubscribe();
   }, [router]);
 
-  // Build referral link - only runs on client
-  const getReferralLink = () => {
-    if (typeof window === 'undefined') return '';
-    return `${window.location.origin}/?ref=${referralCode}`;
-  };
-
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--background)' }}>
@@ -104,6 +106,21 @@ export default function InfluencerDashboard() {
       </div>
     );
   }
+
+  const handleCopyProfile = () => {
+    if (typeof navigator !== 'undefined') {
+      navigator.clipboard.writeText(profileUrl);
+      alert('✅ Profile link copied!');
+    }
+  };
+
+  const handleCopyReferral = () => {
+    if (typeof navigator !== 'undefined') {
+      navigator.clipboard.writeText(referralLink);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
 
   return (
     <main className="min-h-screen py-12" style={{ backgroundColor: 'var(--background)' }}>
@@ -137,7 +154,7 @@ export default function InfluencerDashboard() {
           </div>
 
           {/* Profile Link */}
-          {profileUrl && (
+          {isMounted && profileUrl && (
             <div className="rounded-2xl p-6 mb-8 shadow-lg" style={{ backgroundColor: 'var(--card)' }}>
               <h2 className="text-xl font-bold mb-3" style={{ color: 'var(--foreground)' }}>📱 Your Public Profile</h2>
               <p className="text-sm opacity-70 mb-3">Share this link with your audience:</p>
@@ -150,12 +167,7 @@ export default function InfluencerDashboard() {
                   style={{ backgroundColor: 'var(--background)', borderColor: 'var(--border)', color: 'var(--foreground)' }}
                 />
                 <button
-                  onClick={() => {
-                    if (typeof navigator !== 'undefined') {
-                      navigator.clipboard.writeText(profileUrl);
-                      alert('✅ Profile link copied!');
-                    }
-                  }}
+                  onClick={handleCopyProfile}
                   className="px-6 py-3 rounded-xl font-semibold transition"
                   style={{ backgroundColor: 'var(--primary)', color: 'var(--background)' }}
                 >
@@ -166,33 +178,29 @@ export default function InfluencerDashboard() {
           )}
 
           {/* Referral Link */}
-          <div className="rounded-2xl p-6 mb-8 shadow-lg" style={{ backgroundColor: 'var(--card)' }}>
-            <h2 className="text-xl font-bold mb-3" style={{ color: 'var(--foreground)' }}>🔗 Your Referral Link</h2>
-            <p className="text-sm opacity-70 mb-4">Share this link with your audience. You earn ₦2,000 per shoe sold!</p>
-            <div className="flex flex-col sm:flex-row gap-3">
-              <input
-                type="text"
-                value={getReferralLink()}
-                readOnly
-                className="flex-1 px-4 py-3 rounded-xl border focus:outline-none"
-                style={{ backgroundColor: 'var(--background)', borderColor: 'var(--border)', color: 'var(--foreground)' }}
-              />
-              <button
-                onClick={() => {
-                  if (typeof navigator !== 'undefined') {
-                    navigator.clipboard.writeText(getReferralLink());
-                    setCopied(true);
-                    setTimeout(() => setCopied(false), 2000);
-                  }
-                }}
-                className="px-6 py-3 rounded-xl font-semibold transition"
-                style={{ backgroundColor: 'var(--primary)', color: 'var(--background)' }}
-              >
-                {copied ? '✅ Copied!' : '📋 Copy Link'}
-              </button>
+          {isMounted && referralLink && (
+            <div className="rounded-2xl p-6 mb-8 shadow-lg" style={{ backgroundColor: 'var(--card)' }}>
+              <h2 className="text-xl font-bold mb-3" style={{ color: 'var(--foreground)' }}>🔗 Your Referral Link</h2>
+              <p className="text-sm opacity-70 mb-4">Share this link with your audience. You earn ₦2,000 per shoe sold!</p>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <input
+                  type="text"
+                  value={referralLink}
+                  readOnly
+                  className="flex-1 px-4 py-3 rounded-xl border focus:outline-none"
+                  style={{ backgroundColor: 'var(--background)', borderColor: 'var(--border)', color: 'var(--foreground)' }}
+                />
+                <button
+                  onClick={handleCopyReferral}
+                  className="px-6 py-3 rounded-xl font-semibold transition"
+                  style={{ backgroundColor: 'var(--primary)', color: 'var(--background)' }}
+                >
+                  {copied ? '✅ Copied!' : '📋 Copy Link'}
+                </button>
+              </div>
+              <p className="text-xs opacity-50 mt-3">Your code: <span className="font-mono font-bold">{referralCode}</span></p>
             </div>
-            <p className="text-xs opacity-50 mt-3">Your code: <span className="font-mono font-bold">{referralCode}</span></p>
-          </div>
+          )}
 
           {/* Withdraw Button */}
           {totalEarnings >= 50 && (
