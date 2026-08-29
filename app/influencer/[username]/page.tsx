@@ -6,7 +6,7 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc, collection, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import dynamic from 'next/dynamic';
+import { Suspense } from 'react';
 
 function InfluencerDashboardContent() {
   const router = useRouter();
@@ -20,10 +20,8 @@ function InfluencerDashboardContent() {
   const [totalReferred, setTotalReferred] = useState(0);
   const [profileUrl, setProfileUrl] = useState('');
   const [referralLink, setReferralLink] = useState('');
-  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
-    setIsMounted(true);
     if (typeof window !== 'undefined') {
       setReferralLink(`${window.location.origin}/?ref=${referralCode}`);
       if (influencerData?.influencerName) {
@@ -133,7 +131,7 @@ function InfluencerDashboardContent() {
             </div>
           </div>
 
-          {isMounted && profileUrl && (
+          {profileUrl && (
             <div className="rounded-2xl p-6 mb-8 shadow-lg" style={{ backgroundColor: 'var(--card)' }}>
               <h2 className="text-xl font-bold mb-3" style={{ color: 'var(--foreground)' }}>📱 Your Public Profile</h2>
               <p className="text-sm opacity-70 mb-3">Share this link with your audience:</p>
@@ -161,7 +159,7 @@ function InfluencerDashboardContent() {
             </div>
           )}
 
-          {isMounted && referralLink && (
+          {referralLink && (
             <div className="rounded-2xl p-6 mb-8 shadow-lg" style={{ backgroundColor: 'var(--card)' }}>
               <h2 className="text-xl font-bold mb-3" style={{ color: 'var(--foreground)' }}>🔗 Your Referral Link</h2>
               <p className="text-sm opacity-70 mb-4">Share this link with your audience. You earn ₦2,000 per shoe sold!</p>
@@ -236,10 +234,14 @@ function InfluencerDashboardContent() {
   );
 }
 
-// Use dynamic import with ssr: false to completely disable server-side rendering
-const InfluencerDashboard = dynamic(
-  () => Promise.resolve(InfluencerDashboardContent),
-  { ssr: false }
-);
-
-export default InfluencerDashboard;
+export default function InfluencerDashboard() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--background)' }}>
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-black dark:border-white"></div>
+      </div>
+    }>
+      <InfluencerDashboardContent />
+    </Suspense>
+  );
+}
