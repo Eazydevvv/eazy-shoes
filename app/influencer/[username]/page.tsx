@@ -6,8 +6,9 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc, collection, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 
-export default function InfluencerDashboard() {
+function InfluencerDashboardContent() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
@@ -21,7 +22,6 @@ export default function InfluencerDashboard() {
   const [referralLink, setReferralLink] = useState('');
   const [isMounted, setIsMounted] = useState(false);
 
-  // Set mounted state on client
   useEffect(() => {
     setIsMounted(true);
     if (typeof window !== 'undefined') {
@@ -54,7 +54,6 @@ export default function InfluencerDashboard() {
         const code = data.referralCode || user.uid.slice(0, 6).toUpperCase();
         setReferralCode(code);
 
-        // Get all users who signed up using this referral code
         const usersQuery = query(
           collection(db, 'users'),
           where('referredBy', '==', code)
@@ -62,10 +61,8 @@ export default function InfluencerDashboard() {
         const usersSnapshot = await getDocs(usersQuery);
         const referredUsers = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         
-        // Total people referred
         setTotalReferred(referredUsers.length);
 
-        // Get orders from referrals
         const ordersQuery = query(
           collection(db, 'orders'),
           where('referralCode', '==', code),
@@ -107,33 +104,16 @@ export default function InfluencerDashboard() {
     );
   }
 
-  const handleCopyProfile = () => {
-    if (typeof navigator !== 'undefined') {
-      navigator.clipboard.writeText(profileUrl);
-      alert('✅ Profile link copied!');
-    }
-  };
-
-  const handleCopyReferral = () => {
-    if (typeof navigator !== 'undefined') {
-      navigator.clipboard.writeText(referralLink);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }
-  };
-
   return (
     <main className="min-h-screen py-12" style={{ backgroundColor: 'var(--background)' }}>
       <div className="container mx-auto px-4">
         <div className="max-w-4xl mx-auto">
-          {/* Header */}
           <div className="mb-8">
             <h1 className="text-3xl font-bold" style={{ color: 'var(--foreground)' }}>Influencer Dashboard</h1>
             <p className="opacity-70 mt-1">Welcome, {influencerData?.influencerName || user?.email}</p>
             <p className="text-xs opacity-50 mt-1">Your referral code: <span className="font-mono font-bold">{referralCode}</span></p>
           </div>
 
-          {/* Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mb-8">
             <div className="rounded-2xl p-4 md:p-6 shadow-lg text-center" style={{ backgroundColor: 'var(--card)' }}>
               <p className="text-sm opacity-70">Total Referred</p>
@@ -153,7 +133,6 @@ export default function InfluencerDashboard() {
             </div>
           </div>
 
-          {/* Profile Link */}
           {isMounted && profileUrl && (
             <div className="rounded-2xl p-6 mb-8 shadow-lg" style={{ backgroundColor: 'var(--card)' }}>
               <h2 className="text-xl font-bold mb-3" style={{ color: 'var(--foreground)' }}>📱 Your Public Profile</h2>
@@ -167,7 +146,12 @@ export default function InfluencerDashboard() {
                   style={{ backgroundColor: 'var(--background)', borderColor: 'var(--border)', color: 'var(--foreground)' }}
                 />
                 <button
-                  onClick={handleCopyProfile}
+                  onClick={() => {
+                    if (typeof navigator !== 'undefined') {
+                      navigator.clipboard.writeText(profileUrl);
+                      alert('✅ Profile link copied!');
+                    }
+                  }}
                   className="px-6 py-3 rounded-xl font-semibold transition"
                   style={{ backgroundColor: 'var(--primary)', color: 'var(--background)' }}
                 >
@@ -177,7 +161,6 @@ export default function InfluencerDashboard() {
             </div>
           )}
 
-          {/* Referral Link */}
           {isMounted && referralLink && (
             <div className="rounded-2xl p-6 mb-8 shadow-lg" style={{ backgroundColor: 'var(--card)' }}>
               <h2 className="text-xl font-bold mb-3" style={{ color: 'var(--foreground)' }}>🔗 Your Referral Link</h2>
@@ -191,7 +174,13 @@ export default function InfluencerDashboard() {
                   style={{ backgroundColor: 'var(--background)', borderColor: 'var(--border)', color: 'var(--foreground)' }}
                 />
                 <button
-                  onClick={handleCopyReferral}
+                  onClick={() => {
+                    if (typeof navigator !== 'undefined') {
+                      navigator.clipboard.writeText(referralLink);
+                      setCopied(true);
+                      setTimeout(() => setCopied(false), 2000);
+                    }
+                  }}
                   className="px-6 py-3 rounded-xl font-semibold transition"
                   style={{ backgroundColor: 'var(--primary)', color: 'var(--background)' }}
                 >
@@ -202,7 +191,6 @@ export default function InfluencerDashboard() {
             </div>
           )}
 
-          {/* Withdraw Button */}
           {totalEarnings >= 50 && (
             <div className="rounded-2xl p-6 mb-8 shadow-lg text-center" style={{ backgroundColor: 'var(--card)' }}>
               <h2 className="text-xl font-bold mb-3" style={{ color: 'var(--foreground)' }}>💰 Withdraw Earnings</h2>
@@ -220,7 +208,6 @@ export default function InfluencerDashboard() {
             </div>
           )}
 
-          {/* Referral Orders */}
           <div className="rounded-2xl p-6 shadow-lg" style={{ backgroundColor: 'var(--card)' }}>
             <h2 className="text-xl font-bold mb-4" style={{ color: 'var(--foreground)' }}>📋 Recent Referrals</h2>
             {referrals.length === 0 ? (
@@ -248,3 +235,11 @@ export default function InfluencerDashboard() {
     </main>
   );
 }
+
+// Use dynamic import with ssr: false to completely disable server-side rendering
+const InfluencerDashboard = dynamic(
+  () => Promise.resolve(InfluencerDashboardContent),
+  { ssr: false }
+);
+
+export default InfluencerDashboard;
