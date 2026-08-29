@@ -7,7 +7,7 @@ import Link from 'next/link';
 
 // List of admin emails
 const ADMIN_EMAILS = [
-  
+
   'israelolalere2008@gmail.com',
   'israel2008'
 ];
@@ -24,7 +24,7 @@ export default function AdminLayout({
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
       console.log('Current user:', user?.email);
-      
+
       if (!user) {
         console.log('No user, redirecting to auth');
         sessionStorage.setItem('redirectAfterLogin', '/admin');
@@ -36,11 +36,11 @@ export default function AdminLayout({
       // Check if email is in admin list
       const userEmail = user.email || '';
       const emailIsAdmin = ADMIN_EMAILS.includes(userEmail);
-      
+
       console.log('User email:', userEmail);
       console.log('Is in admin list?', emailIsAdmin);
       console.log('Admin list:', ADMIN_EMAILS);
-      
+
       if (emailIsAdmin) {
         console.log('✅ User is admin, granting access');
         setIsAdmin(true);
@@ -48,7 +48,7 @@ export default function AdminLayout({
         console.log('❌ User is NOT admin, redirecting to home');
         router.push('/');
       }
-      
+
       setLoading(false);
     });
 
@@ -79,9 +79,18 @@ export default function AdminLayout({
                 <Link href="/admin/products" className="hover:text-gray-300 transition">Products</Link>
                 <Link href="/admin/orders" className="hover:text-gray-300 transition">Orders</Link>
                 <Link href="/admin/withdrawals" className="hover:text-gray-300 transition">
-  Withdrawals
+                  Withdrawals
+                </Link>
+                <Link href="/admin/creators" className="hover:text-gray-300 transition">
+                  Creators
+                </Link>
+                <Link href="/admin/analytics" className="hover:text-gray-300 transition">Analytics</Link>
+                <Link href="/admin/influencers" className="hover:text-gray-300 transition">
+                  Influencers
+                </Link>
+                <Link href="/admin/users" className="hover:text-gray-300 transition">
+  Users
 </Link>
-<Link href="/admin/analytics" className="hover:text-gray-300 transition">Analytics</Link>
               </nav>
             </div>
             <div className="flex items-center space-x-4">

@@ -10,7 +10,9 @@ interface CartItem {
   quantity: number;
   size?: number;
   color?: string;
-  image?: string; // Make sure this exists
+  image?: string;
+  referralCode?: string | null;
+  addedAt?: number; // ADD THIS
 }
 
 interface CartContextType {
@@ -28,7 +30,6 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [cart, setCart] = useState<CartItem[]>([]);
 
-  // Load cart from localStorage on mount
   useEffect(() => {
     const savedCart = localStorage.getItem('cart');
     if (savedCart) {
@@ -36,25 +37,27 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  // Save cart to localStorage whenever it changes
   useEffect(() => {
     localStorage.setItem('cart', JSON.stringify(cart));
   }, [cart]);
 
   const addToCart = (item: CartItem) => {
     setCart(prevCart => {
-      // Check if item already exists with same size and color
       const existingIndex = prevCart.findIndex(
         i => i.productId === item.productId && i.size === item.size && i.color === item.color
       );
       
       if (existingIndex >= 0) {
-        // Update quantity
         const updatedCart = [...prevCart];
         updatedCart[existingIndex].quantity += item.quantity;
+        if (item.referralCode) {
+          updatedCart[existingIndex].referralCode = item.referralCode;
+        }
+        if (item.addedAt) {
+          updatedCart[existingIndex].addedAt = item.addedAt;
+        }
         return updatedCart;
       } else {
-        // Add new item
         return [...prevCart, item];
       }
     });

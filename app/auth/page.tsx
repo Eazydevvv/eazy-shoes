@@ -1,12 +1,13 @@
 'use client';
 
-import { Suspense } from 'react';
+import { Suspense, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useState } from 'react';
-import { auth } from '@/lib/firebase/config';
+import { auth, db } from '@/lib/firebase/config';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
 import { createUserProfile } from '@/lib/firebase/users';
+import { doc, getDoc } from 'firebase/firestore';
 
 function AuthContent() {
   const [isLogin, setIsLogin] = useState(true);
@@ -16,7 +17,18 @@ function AuthContent() {
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   const searchParams = useSearchParams();
-  const referralCode = searchParams.get('ref');
+  const urlReferralCode = searchParams.get('ref');
+
+  // Check for referral code from URL or localStorage
+  useEffect(() => {
+    const savedRef = typeof window !== 'undefined' ? localStorage.getItem('pendingReferral') : null;
+    const finalRef = urlReferralCode || savedRef;
+    
+    if (finalRef) {
+      console.log('🔑 Referral code found:', finalRef);
+      localStorage.setItem('pendingReferral', finalRef);
+    }
+  }, [urlReferralCode]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,28 +38,58 @@ function AuthContent() {
 
     try {
       if (isLogin) {
-        await signInWithEmailAndPassword(auth, email, password);
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
         setSuccess('Welcome back! Redirecting...');
+        
+        const userDoc = await getDoc(doc(db, 'users', userCredential.user.uid));
+        const userData = userDoc.data();
+        const userRole = userData?.role;
+        const isInfluencer = userData?.influencer === true;
         
         let redirectUrl = '/';
         if (typeof window !== 'undefined') {
-          redirectUrl = sessionStorage.getItem('redirectAfterLogin') || '/';
-          sessionStorage.removeItem('redirectAfterLogin');
+          const savedRedirect = sessionStorage.getItem('redirectAfterLogin');
+          
+          if (userRole === 'creator') {
+            redirectUrl = '/creator';
+          } else if (isInfluencer) {
+            redirectUrl = '/dashboard/influencer';
+          } else if (savedRedirect) {
+            redirectUrl = savedRedirect;
+            sessionStorage.removeItem('redirectAfterLogin');
+          } else {
+            redirectUrl = '/dashboard';
+          }
         }
         
         setTimeout(() => {
           window.location.href = redirectUrl;
         }, 1500);
       } else {
+        // Sign up new user
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        await createUserProfile(userCredential.user.uid, email, referralCode || undefined);
+        
+        // Check for referral from URL or localStorage
+        const urlRef = searchParams.get('ref');
+        const savedRef = typeof window !== 'undefined' ? localStorage.getItem('pendingReferral') : null;
+        const finalRef = urlRef || savedRef;
+        
+        console.log('🔑 Referral code from URL:', urlRef);
+        console.log('💾 Referral code from localStorage:', savedRef);
+        console.log('✅ Final referral code:', finalRef);
+        
+        await createUserProfile(userCredential.user.uid, email, finalRef || undefined);
         setSuccess('Account created! Redirecting...');
+        
+        // Clear the pending referral
+        localStorage.removeItem('pendingReferral');
         
         setTimeout(() => {
           window.location.href = '/dashboard';
         }, 1500);
       }
     } catch (error: any) {
+      console.error('Full error:', error);
       setLoading(false);
       if (error.code === 'auth/invalid-credential') {
         setError('Invalid email or password. Please try again.');
@@ -56,7 +98,7 @@ function AuthContent() {
       } else if (error.code === 'auth/weak-password') {
         setError('Password should be at least 6 characters.');
       } else {
-        setError('Something went wrong. Please try again.');
+        setError(error.message || 'Something went wrong. Please try again.');
       }
     }
   };

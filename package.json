@@ -13,6 +13,7 @@
     "@makozi/paystack-react-pay": "^1.0.5",
     "date-fns": "^4.1.0",
     "firebase": "^12.11.0",
+    "firebase-admin": "^13.10.0",
     "next": "16.2.0",
     "next-cloudinary": "^6.17.5",
     "paystack-pay": "^0.1.2",

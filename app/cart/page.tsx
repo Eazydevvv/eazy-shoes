@@ -10,8 +10,15 @@ export default function CartPage() {
   const router = useRouter();
 
   const handleCheckout = () => {
+    // Get referral from cart items
+    const referralItem = cart.find(item => item.referralCode);
+    const referralCode = referralItem?.referralCode || null;
+    
+    // Save cart with referral
     sessionStorage.setItem('checkoutCart', JSON.stringify(cart));
-    router.push('/checkout');
+    
+    const checkoutUrl = referralCode ? `/checkout?ref=${referralCode}` : '/checkout';
+    router.push(checkoutUrl);
   };
 
   if (cart.length === 0) {

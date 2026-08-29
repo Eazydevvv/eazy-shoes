@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/firebase/config';
 import { collection, addDoc, query, where, getDocs, doc, getDoc, updateDoc } from 'firebase/firestore';
 
-const WITHDRAWAL_FEE = 100; // ₦100 fee
+const WITHDRAWAL_FEE = 100;
 
 export async function POST(request: Request) {
   try {
@@ -23,12 +23,10 @@ export async function POST(request: Request) {
 
     console.log('💰 Current balance:', currentBalance);
 
-    // Check minimum
     if (amount < 50) {
       return NextResponse.json({ error: 'Minimum withdrawal is ₦50' }, { status: 400 });
     }
 
-    // Check if enough balance (amount + fee)
     const totalNeeded = amount + WITHDRAWAL_FEE;
     if (totalNeeded > currentBalance) {
       return NextResponse.json({ 
@@ -56,13 +54,13 @@ export async function POST(request: Request) {
       requestedAt: new Date()
     });
 
-    // DEDUCT amount + fee
+    // Deduct amount + fee
     const newBalance = currentBalance - totalNeeded;
     await updateDoc(userRef, {
       totalEarnings: newBalance
     });
 
-    console.log(`✅ Withdrawal: ₦${amount} + ₦${WITHDRAWAL_FEE} fee deducted. New balance: ₦${newBalance}`);
+    console.log(`✅ Withdrawal: ₦${amount} deducted. New balance: ₦${newBalance}`);
 
     return NextResponse.json({ 
       success: true, 

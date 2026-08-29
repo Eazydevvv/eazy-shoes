@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { db } from '@/lib/firebase/config';
 import { collection, getDocs } from 'firebase/firestore';
 import ProductCard from '@/components/ui/ProductCard';
@@ -20,11 +20,21 @@ interface Product {
 
 export default function Home() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const ref = searchParams.get('ref');
+  
   const [products, setProducts] = useState<Product[]>([]);
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Save referral code if present
+    if (ref) {
+      localStorage.setItem('referralCode', ref);
+      localStorage.setItem('pendingReferral', ref);
+      console.log('💾 Saved referral code:', ref);
+    }
+
     const fetchProducts = async () => {
       try {
         const querySnapshot = await getDocs(collection(db, 'products'));
@@ -43,7 +53,7 @@ export default function Home() {
     };
 
     fetchProducts();
-  }, []);
+  }, [ref]);
 
   const scrollToProducts = () => {
     const productsSection = document.getElementById('featured-products');
@@ -95,12 +105,12 @@ export default function Home() {
                 </svg>
               </button>
               
-              <button 
-                onClick={() => router.push('/dashboard')}
+              <Link
+                href={`/auth${ref ? `?ref=${ref}` : ''}`}
                 className="border-2 border-white text-white px-8 py-4 rounded-full font-bold text-lg hover:bg-white/10 transition-all duration-300 backdrop-blur-sm"
               >
                 Start Earning
-              </button>
+              </Link>
             </div>
           </div>
         </div>
@@ -109,13 +119,13 @@ export default function Home() {
       </section>
 
       {/* Featured Products */}
-      <section id="featured-products" className="py-24">
+      <section id="featured-products" className="py-24" style={{ backgroundColor: 'var(--background)' }}>
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-black mb-4" style={{ color: 'var(--foreground)' }}>
               Featured Drops
             </h2>
-            <p className="max-w-2xl mx-auto opacity-70">
+            <p className="max-w-2xl mx-auto" style={{ color: 'var(--foreground)', opacity: 0.7 }}>
               The most anticipated releases, hand-picked for your campus style
             </p>
           </div>
@@ -195,12 +205,12 @@ export default function Home() {
             <p className="text-xl text-gray-300 mb-8">
               Refer a friend and get 2k off your next purchase.
             </p>
-            <button 
-              onClick={() => router.push('/dashboard')}
+            <Link
+              href={`/auth${ref ? `?ref=${ref}` : ''}`}
               className="bg-gradient-to-r from-yellow-500 to-yellow-600 text-black px-12 py-4 rounded-full font-bold text-lg hover:from-yellow-400 hover:to-yellow-500 transition-all duration-300 transform hover:scale-105"
             >
               Start Referring
-            </button>
+            </Link>
           </div>
         </div>
       </section>

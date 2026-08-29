@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { auth, db } from '@/lib/firebase/config';
 import { onAuthStateChanged } from 'firebase/auth';
-import { collection, query, where, getDocs, orderBy, doc, getDoc, updateDoc, limit } from 'firebase/firestore';
+import { collection, query, where, setDoc, getDocs, orderBy, doc, getDoc, updateDoc, limit } from 'firebase/firestore';
 import Link from 'next/link';
 
 interface Product {
@@ -41,112 +41,130 @@ function DashboardContent() {
     const [productLinkCopied, setProductLinkCopied] = useState(false);
     const [withdrawals, setWithdrawals] = useState<any[]>([]);
     const [showWithdrawalHistory, setShowWithdrawalHistory] = useState(false);
+    const [userRole, setUserRole] = useState('');
 
     const fetchUserData = async (user: any) => {
-        try {
-            const userDoc = await getDoc(doc(db, 'users', user.uid));
+    try {
+        console.log('🔍 Fetching user data for:', user.uid);
+        
+        const userRef = doc(db, 'users', user.uid);
+        let userDoc = await getDoc(userRef);
 
-            if (userDoc.exists()) {
-                const userData = userDoc.data();
-                let currentReferralCode = userData.referralCode;
-
-                if (!currentReferralCode) {
-                    const newReferralCode = user.uid.slice(0, 6).toUpperCase();
-                    await updateDoc(doc(db, 'users', user.uid), {
-                        referralCode: newReferralCode,
-                        totalEarnings: 0,
-                        totalReferrals: 0
-                    });
-                    currentReferralCode = newReferralCode;
-                }
-
-                setReferralCode(currentReferralCode);
-                const currentBalance = userData.totalEarnings || 0;
-                setTotalEarnings(currentBalance);
-
-                const referredOrdersQuery = query(
-                    collection(db, 'orders'),
-                    where('referralCode', '==', currentReferralCode),
-                    orderBy('createdAt', 'desc')
-                );
-                const referredOrdersSnapshot = await getDocs(referredOrdersQuery);
-                setReferralCount(referredOrdersSnapshot.size);
-
-                let earnings = 0;
-                referredOrdersSnapshot.forEach(doc => {
-                    const data = doc.data();
-                    earnings += data.commission || 0;
-                });
-                setTotalEarnings(earnings);
-            }
-
-            const ordersQuery = query(
-                collection(db, 'orders'),
-                where('userId', '==', user.uid),
-                orderBy('createdAt', 'desc'),
-                limit(5)
-            );
-            const ordersSnapshot = await getDocs(ordersQuery);
-            const userOrders: Order[] = [];
-            ordersSnapshot.forEach(doc => {
-                const data = doc.data();
-                userOrders.push({
-                    id: doc.id,
-                    orderReference: data.orderReference,
-                    totalAmount: data.totalAmount || 0,
-                    status: data.status || 'pending',
-                    products: data.products || [],
-                    createdAt: data.createdAt
-                });
+        // If user document doesn't exist, create it
+        if (!userDoc.exists()) {
+            console.log('⚠️ User document not found, creating...');
+            const newReferralCode = user.uid.slice(0, 6).toUpperCase();
+            await setDoc(userRef, {
+                uid: user.uid,
+                email: user.email,
+                referralCode: newReferralCode,
+                role: 'user',
+                createdAt: new Date(),
+                totalEarnings: 0,
+                totalReferrals: 0
             });
-            setOrders(userOrders);
-
-            const withdrawalsQuery = query(
-                collection(db, 'withdrawals'),
-                where('userId', '==', user.uid),
-                orderBy('requestedAt', 'desc')
-            );
-
-            const withdrawalsSnapshot = await getDocs(withdrawalsQuery);
-            const withdrawalData: any[] = [];
-            withdrawalsSnapshot.forEach(doc => {
-                const data = doc.data();
-                withdrawalData.push({
-                    id: doc.id,
-                    amount: data.amount || 0,
-                    status: data.status || 'pending',
-                    fee: data.fee || 0,
-                    requestedAt: data.requestedAt,
-                    paidAt: data.paidAt
-                });
-            });
-            setWithdrawals(withdrawalData);
-
-            let pending = 0;
-            for (let i = 0; i < withdrawalData.length; i++) {
-                if (withdrawalData[i].status === 'pending') {
-                    pending += withdrawalData[i].amount;
-                }
-            }
-            setPendingWithdrawal(pending);
-
-            const productsSnapshot = await getDocs(collection(db, 'products'));
-            const productsData: Product[] = [];
-            productsSnapshot.forEach(doc => {
-                const data = doc.data();
-                productsData.push({
-                    id: doc.id,
-                    name: data.name || '',
-                    price: data.price || 0,
-                    brand: data.brand,
-                    images: data.images || []
-                });
-            });
-            setProducts(productsData);
-        } catch (err: any) {
-            console.error('Error fetching user data:', err);
+            userDoc = await getDoc(userRef);
+            console.log('✅ User document created');
         }
-    };
+
+        if (userDoc.exists()) {
+            const userData = userDoc.data();
+            console.log('📄 User data:', userData);
+            
+            setUserRole(userData.role || '');
+            let currentReferralCode = userData.referralCode;
+
+            if (!currentReferralCode) {
+                const newReferralCode = user.uid.slice(0, 6).toUpperCase();
+                await updateDoc(doc(db, 'users', user.uid), {
+                    referralCode: newReferralCode,
+                    totalEarnings: 0,
+                    totalReferrals: 0
+                });
+                currentReferralCode = newReferralCode;
+            }
+
+            setReferralCode(currentReferralCode);
+            const currentBalance = userData.totalEarnings || 0;
+            setTotalEarnings(currentBalance);
+
+            const referredOrdersQuery = query(
+                collection(db, 'orders'),
+                where('referralCode', '==', currentReferralCode),
+                orderBy('createdAt', 'desc')
+            );
+            const referredOrdersSnapshot = await getDocs(referredOrdersQuery);
+            setReferralCount(referredOrdersSnapshot.size);
+        }
+
+        const ordersQuery = query(
+            collection(db, 'orders'),
+            where('userId', '==', user.uid),
+            orderBy('createdAt', 'desc'),
+            limit(5)
+        );
+        const ordersSnapshot = await getDocs(ordersQuery);
+        const userOrders: Order[] = [];
+        ordersSnapshot.forEach(doc => {
+            const data = doc.data();
+            userOrders.push({
+                id: doc.id,
+                orderReference: data.orderReference,
+                totalAmount: data.totalAmount || 0,
+                status: data.status || 'pending',
+                products: data.products || [],
+                createdAt: data.createdAt
+            });
+        });
+        setOrders(userOrders);
+
+        const withdrawalsQuery = query(
+            collection(db, 'withdrawals'),
+            where('userId', '==', user.uid),
+            orderBy('requestedAt', 'desc')
+        );
+
+        const withdrawalsSnapshot = await getDocs(withdrawalsQuery);
+        const withdrawalData: any[] = [];
+        withdrawalsSnapshot.forEach(doc => {
+            const data = doc.data();
+            withdrawalData.push({
+                id: doc.id,
+                amount: data.amount || 0,
+                status: data.status || 'pending',
+                fee: data.fee || 0,
+                requestedAt: data.requestedAt,
+                paidAt: data.paidAt
+            });
+        });
+        setWithdrawals(withdrawalData);
+
+        let pending = 0;
+        for (let i = 0; i < withdrawalData.length; i++) {
+            if (withdrawalData[i].status === 'pending') {
+                pending += withdrawalData[i].amount;
+            }
+        }
+        setPendingWithdrawal(pending);
+
+        const productsSnapshot = await getDocs(collection(db, 'products'));
+        const productsData: Product[] = [];
+        productsSnapshot.forEach(doc => {
+            const data = doc.data();
+            productsData.push({
+                id: doc.id,
+                name: data.name || '',
+                price: data.price || 0,
+                brand: data.brand,
+                images: data.images || []
+            });
+        });
+        setProducts(productsData);
+        
+    } catch (err: any) {
+        console.error('Error fetching user data:', err);
+    }
+};
 
     useEffect(() => {
         const refresh = searchParams.get('refresh');
@@ -221,6 +239,18 @@ function DashboardContent() {
                         <p className="text-xs opacity-50 mt-1">Referral code: <span className="font-mono font-bold">{referralCode}</span></p>
                     </div>
 
+                    {/* Show creator dashboard link if user is creator */}
+                    {userRole === 'influencer' && (
+                        <div className="mb-6">
+                            <Link
+                                href="/dashboard/influencer"
+                                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition"
+                                style={{ backgroundColor: 'var(--primary)', color: 'var(--background)' }}
+                            >
+                                🌟 Go to Influencer Dashboard
+                            </Link>
+                        </div>
+                    )}
                     {/* Stats Grid */}
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
                         <div className="rounded-lg shadow p-5" style={{ backgroundColor: 'var(--card)' }}>
@@ -251,11 +281,10 @@ function DashboardContent() {
                             </div>
                             <Link
                                 href="/dashboard/withdraw"
-                                className={`px-6 py-3 rounded-lg font-semibold transition ${
-                                    totalEarnings >= 150 
-                                        ? 'bg-black dark:bg-white text-white dark:text-black hover:opacity-80' 
+                                className={`px-6 py-3 rounded-lg font-semibold transition ${totalEarnings >= 150
+                                        ? 'bg-black dark:bg-white text-white dark:text-black hover:opacity-80'
                                         : 'bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed pointer-events-none'
-                                }`}
+                                    }`}
                             >
                                 {totalEarnings >= 150 ? 'Withdraw' : `Need ₦150`}
                             </Link>

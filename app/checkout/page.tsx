@@ -17,6 +17,7 @@ interface CartItem {
   color?: string;
   image?: string;
   referralCode?: string;
+  addedAt?: number;
 }
 
 const COMMISSION_PER_SHOE = 2000;
@@ -44,31 +45,44 @@ function CheckoutContent() {
     ? cartItems.reduce((sum, item) => sum + (COMMISSION_PER_SHOE * item.quantity), 0)
     : 0;
 
-  // Check if there's actually a referral in the URL
   const hasReferralInUrl = searchParams.get('ref') !== null;
 
   useEffect(() => {
     const urlRef = searchParams.get('ref');
     const savedCart = sessionStorage.getItem('checkoutCart');
     
+    let cart = [];
     if (savedCart) {
-      const cart = JSON.parse(savedCart);
+      cart = JSON.parse(savedCart);
       setCartItems(cart);
     } else {
       router.push('/');
       return;
     }
 
-    // Only set referral code if it came from URL
-    if (urlRef) {
-      setRefCode(urlRef);
+    let finalRef = urlRef;
+    
+    if (!finalRef && cart.length > 0) {
+      const cartRef = cart.find((item: any) => item.referralCode);
+      if (cartRef) {
+        finalRef = cartRef.referralCode;
+      }
+    }
+
+    if (!finalRef) {
+      finalRef = typeof window !== 'undefined' ? localStorage.getItem('referralCode') : null;
+    }
+
+    if (finalRef) {
+      setRefCode(finalRef);
       const findReferrer = async () => {
         try {
-          const usersQuery = query(collection(db, 'users'), where('referralCode', '==', urlRef));
+          const usersQuery = query(collection(db, 'users'), where('referralCode', '==', finalRef));
           const usersSnapshot = await getDocs(usersQuery);
           if (!usersSnapshot.empty) {
             const referrer = usersSnapshot.docs[0];
             setReferrerId(referrer.id);
+            console.log('✅ Referrer found:', referrer.id);
           }
         } catch (error) {
           console.error('Error finding referrer:', error);
@@ -97,18 +111,39 @@ function CheckoutContent() {
 
   const handlePaymentSuccess = async (reference: string) => {
     try {
-      const totalQuantity = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+      // Calculate which items are referred (added after referral activation)
+      const referralActivatedAt = typeof window !== 'undefined' ? localStorage.getItem('referralActivatedAt') : null;
+      
+      const referredItems = cartItems.filter(item => {
+        if (item.addedAt && referralActivatedAt) {
+          return item.addedAt > parseInt(referralActivatedAt);
+        }
+        // If no addedAt, check if item has referralCode directly
+        return !!item.referralCode;
+      });
+
+      const totalQuantity = referredItems.reduce((sum, item) => sum + item.quantity, 0);
       const commissionEarned = refCode ? COMMISSION_PER_SHOE * totalQuantity : 0;
+      
+      console.log('📝 ORDER DATA:');
+      console.log('  refCode:', refCode);
+      console.log('  referrerId:', referrerId);
+      console.log('  Total items:', cartItems.length);
+      console.log('  Referred items:', referredItems.length);
+      console.log('  Commission:', commissionEarned);
       
       const orderData = {
         orderReference: reference,
         userId: user.uid,
         userEmail: user.email,
         deliveryAddress: formData,
-        products: cartItems.map(item => ({
-          ...item,
-          commission: COMMISSION_PER_SHOE * item.quantity
-        })),
+        products: cartItems.map(item => {
+          const isReferred = referredItems.includes(item);
+          return {
+            ...item,
+            commission: isReferred ? COMMISSION_PER_SHOE * item.quantity : 0
+          };
+        }),
         totalAmount: totalAmount,
         totalQuantity: totalQuantity,
         status: 'paid',
@@ -122,22 +157,31 @@ function CheckoutContent() {
       };
 
       await addDoc(collection(db, 'orders'), orderData);
+      console.log('✅ Order saved');
 
-      if (refCode && referrerId) {
+      if (refCode && referrerId && commissionEarned > 0) {
+        console.log('💰 Updating referrer earnings for:', referrerId);
         const referrerRef = doc(db, 'users', referrerId);
         const referrerDoc = await getDoc(referrerRef);
+        
         if (referrerDoc.exists()) {
           const currentEarnings = referrerDoc.data().totalEarnings || 0;
-          const currentReferrals = referrerDoc.data().totalReferrals || 0;
+          const newEarnings = currentEarnings + commissionEarned;
           
           await updateDoc(referrerRef, {
-            totalEarnings: currentEarnings + commissionEarned,
-            totalReferrals: currentReferrals + totalQuantity
+            totalEarnings: newEarnings,
+            totalReferrals: (referrerDoc.data().totalReferrals || 0) + totalQuantity
           });
+          console.log(`✅ Referrer earnings updated: ₦${currentEarnings} → ₦${newEarnings}`);
+        } else {
+          console.log('❌ Referrer document not found for ID:', referrerId);
         }
+      } else {
+        console.log('⚠️ No referral code or commission earned');
       }
 
       localStorage.removeItem('pendingReferral');
+      localStorage.removeItem('referralActivatedAt');
       sessionStorage.removeItem('checkoutCart');
       router.push(`/order-success?ref=${reference}`);
     } catch (error) {
@@ -157,13 +201,12 @@ function CheckoutContent() {
   if (!user) return null;
 
   return (
-    <main className="min-h-screen style={{ backgroundColor: 'var(--background)'">
+    <main className="min-h-screen" style={{ backgroundColor: 'var(--background)' }}>
       <div className="container mx-auto px-4">
         <div className="max-w-3xl mx-auto">
           <div className="text-center mb-8">
             <h1 className="text-4xl font-black mb-2">Checkout</h1>
             <p className="text-gray-600">Complete your payment to order</p>
-            {/* Only show referral banner if URL actually has ref parameter */}
             {hasReferralInUrl && refCode && (
               <div className="bg-green-50 border border-green-200 rounded-xl p-4 mt-4">
                 <p className="text-green-700 font-semibold">
@@ -177,7 +220,6 @@ function CheckoutContent() {
           </div>
 
           <div className="space-y-6">
-            {/* Delivery Form */}
             <div className="bg-white rounded-2xl shadow-lg p-6">
               <h2 className="text-xl font-bold mb-4">Delivery Information</h2>
 
@@ -226,7 +268,6 @@ function CheckoutContent() {
               </div>
             </div>
 
-            {/* Order Summary */}
             <div className="bg-white rounded-2xl shadow-lg p-6">
               <h2 className="text-xl font-bold mb-4">Order Summary</h2>
 
@@ -254,7 +295,6 @@ function CheckoutContent() {
               </div>
             </div>
 
-            {/* Paystack Payment Button */}
             <PaystackButton
               email={user.email}
               amount={totalAmount}

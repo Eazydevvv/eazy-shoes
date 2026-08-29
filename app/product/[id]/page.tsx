@@ -11,6 +11,7 @@ import Image from 'next/image';
 import { useCart } from '@/context/CartContext';
 import { Suspense } from 'react';
 import { FaWhatsapp, FaTwitter, FaFacebookF } from 'react-icons/fa';
+import ProductReviews from '@/components/ui/ProductReviews';
 
 interface Product {
     id: string;
@@ -67,6 +68,8 @@ function ProductContent() {
                 localStorage.setItem('referralCode', ref);
                 localStorage.setItem('pendingReferral', ref);
                 localStorage.setItem('pendingProduct', params.id as string);
+                // Store when referral was activated
+                localStorage.setItem('referralActivatedAt', Date.now().toString());
             }
             console.log('🎯 Product referral detected:', ref);
         } else {
@@ -113,6 +116,10 @@ function ProductContent() {
             return;
         }
 
+        const urlRef = searchParams.get('ref');
+        const savedRef = typeof window !== 'undefined' ? localStorage.getItem('referralCode') : null;
+        const finalRef = urlRef || savedRef;
+
         const cartItem = {
             productId: product.id,
             productName: product.name,
@@ -121,14 +128,15 @@ function ProductContent() {
             size: selectedSize,
             color: selectedColor,
             image: product.images?.[0] || '',
-            referralCode: refCode
+            referralCode: finalRef || null,
+            addedAt: Date.now()
         };
 
         if (typeof window !== 'undefined') {
             sessionStorage.setItem('checkoutCart', JSON.stringify([cartItem]));
         }
 
-        const checkoutUrl = refCode ? `/checkout?ref=${refCode}` : '/checkout';
+        const checkoutUrl = finalRef ? `/checkout?ref=${finalRef}` : '/checkout';
         router.push(checkoutUrl);
     };
 
@@ -145,6 +153,10 @@ function ProductContent() {
             return;
         }
 
+        const urlRef = searchParams.get('ref');
+        const savedRef = typeof window !== 'undefined' ? localStorage.getItem('referralCode') : null;
+        const finalRef = urlRef || savedRef;
+
         addToCart({
             productId: product.id,
             productName: product.name,
@@ -152,7 +164,9 @@ function ProductContent() {
             quantity: quantity,
             size: selectedSize !== null ? selectedSize : undefined,
             color: selectedColor !== null ? selectedColor : undefined,
-            image: product.images?.[0] || ''
+            image: product.images?.[0] || '',
+            referralCode: finalRef || null,
+            addedAt: Date.now()
         });
 
         alert('Added to cart!');
@@ -470,6 +484,7 @@ function ProductContent() {
                                 </div>
                             </div>
                         </div>
+                        <ProductReviews productId={product.id} />
                     </div>
                 </div>
             </div>

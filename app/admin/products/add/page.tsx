@@ -224,6 +224,9 @@ export default function AddProductPage() {
     />
     <span className="text-gray-700">🔥 Flash Sale</span>
   </label>
+  <label className="flex items-center gap-2">
+  <input type="checkbox" name="flashSale" /> 🔥 Flash Sale
+</label>
 
         {/* Buttons */}
         <div className="flex justify-end space-x-4 pt-4">
