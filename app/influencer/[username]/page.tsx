@@ -6,6 +6,7 @@ import { collection, query, where, getDocs } from 'firebase/firestore';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
+import dynamic from 'next/dynamic';
 import { Suspense } from 'react';
 
 function InfluencerPageContent() {
@@ -129,14 +130,10 @@ function InfluencerPageContent() {
   );
 }
 
-export default function InfluencerPage() {
-  return (
-    <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--background)' }}>
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-black dark:border-white"></div>
-      </div>
-    }>
-      <InfluencerPageContent />
-    </Suspense>
-  );
-}
+// Disable SSR for this page
+const InfluencerPage = dynamic(
+  () => Promise.resolve(InfluencerPageContent),
+  { ssr: false }
+);
+
+export default InfluencerPage;
