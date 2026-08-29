@@ -1,5 +1,6 @@
 'use client';
 
+import { Suspense } from 'react';
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { db } from '@/lib/firebase/config';
@@ -18,7 +19,7 @@ interface Product {
   featured?: boolean;
 }
 
-export default function Home() {
+function HomeContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const ref = searchParams.get('ref');
@@ -28,7 +29,6 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Save referral code if present
     if (ref) {
       localStorage.setItem('referralCode', ref);
       localStorage.setItem('pendingReferral', ref);
@@ -215,5 +215,17 @@ export default function Home() {
         </div>
       </section>
     </main>
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--background)' }}>
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-black dark:border-white"></div>
+      </div>
+    }>
+      <HomeContent />
+    </Suspense>
   );
 }
