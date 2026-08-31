@@ -28,7 +28,7 @@ export default function AddProductPage() {
 
   // Hardcoded categories
   const productTypes = ['Sneakers', 'Cooperate', 'Slides', 'Palm'];
-  const brands = ['Nike', 'Balenciaga', 'Dr. Martens', 'Chunky', 'Adidas', 'Ogiy', 'Balance', 'Zara'];
+  const brands = ['Nike', 'Balenciaga', 'Dr. Martens', 'Chunky', 'Adidas', 'Ogiy', 'Balance', 'Zara', 'Louis Vuitton', 'Vans', 'Air','Puma','Givenchy,','Prada','Naked Wolfe','Puma','Air Jordan'];
   const genders = ['Unisex'];
 
   const handleSubmit = async (e: React.FormEvent) => {
