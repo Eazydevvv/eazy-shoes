@@ -4,12 +4,12 @@ import { useState } from 'react';
 import { db } from '@/lib/firebase/config';
 import { collection, addDoc } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
-import CloudinaryUpload from '@/components/ui/CloudinaryUpload';
+import DragDropImageUpload from '@/components/ui/DragDropImageUpload';
 
 export default function AddProductPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [imageUrl, setImageUrl] = useState('');
+  const [imageUrls, setImageUrls] = useState<string[]>([]);
   const [formData, setFormData] = useState({
     name: '',
     price: '',
@@ -28,7 +28,7 @@ export default function AddProductPage() {
 
   // Hardcoded categories
   const productTypes = ['Sneakers', 'Cooperate', 'Slides', 'Palm'];
-  const brands = ['Nike', 'Balenciaga', 'Dr. Martens', 'Chunky', 'Adidas', 'Ogiy', 'Balance', 'Zara', 'Louis Vuitton', 'Vans', 'Air','Puma','Givenchy,','Prada','Naked Wolfe','Puma','Air Jordan'];
+  const brands = ['Nike', 'Balenciaga', 'Dr. Martens', 'Chunky', 'Adidas', 'Ogiy', 'Balance', 'Zara', 'Louis Vuitton', 'Vans', 'Air', 'Puma', 'Givenchy', 'Prada', 'Naked Wolfe', 'Air Jordan'];
   const genders = ['Unisex'];
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -54,10 +54,10 @@ export default function AddProductPage() {
         colors: colorsArray,
         inStock: formData.inStock,
         featured: formData.featured,
-        flashSale: formData.flashSale, 
+        flashSale: formData.flashSale,
         rating: formData.rating,
         reviews: formData.reviews,
-        images: imageUrl ? [imageUrl] : [],
+        images: imageUrls,
         createdAt: new Date()
       };
 
@@ -76,27 +76,36 @@ export default function AddProductPage() {
       <h1 className="text-3xl font-bold mb-8">Add New Product</h1>
 
       <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-lg p-8 space-y-6">
-        {/* Image Upload */}
+        {/* Image Upload - Drag & Drop Multiple */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Product Image</label>
-          <CloudinaryUpload onUpload={(url) => setImageUrl(url)} existingImage={imageUrl} />
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Product Images (Drag & Drop Multiple)
+          </label>
+          <DragDropImageUpload
+            onImagesUploaded={(urls) => setImageUrls(urls)}
+            existingImages={imageUrls}
+            maxFiles={5}
+          />
+          <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">
+            Upload multiple images. First image will be the main product image.
+          </p>
         </div>
 
         {/* Basic Info */}
         <div className="grid grid-cols-2 gap-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Product Name *</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Product Name *</label>
             <input
               type="text"
               required
               value={formData.name}
               onChange={(e) => setFormData({...formData, name: e.target.value})}
-              className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:border-black outline-none"
+              className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 focus:border-black dark:focus:border-white outline-none bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
               placeholder="Nike Air Max 270"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Price (₦) *</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Price (₦) *</label>
             <input
               type="number"
               required
@@ -104,20 +113,20 @@ export default function AddProductPage() {
               step="0.01"
               value={formData.price}
               onChange={(e) => setFormData({...formData, price: e.target.value})}
-              className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:border-black outline-none"
+              className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 focus:border-black dark:focus:border-white outline-none bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
               placeholder="50000"
             />
           </div>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Description *</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Description *</label>
           <textarea
             required
             rows={4}
             value={formData.description}
             onChange={(e) => setFormData({...formData, description: e.target.value})}
-            className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:border-black outline-none"
+            className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 focus:border-black dark:focus:border-white outline-none bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
             placeholder="Product description..."
           />
         </div>
@@ -125,12 +134,12 @@ export default function AddProductPage() {
         {/* Categories Grid */}
         <div className="grid grid-cols-2 gap-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Product Type *</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Product Type *</label>
             <select
               required
               value={formData.category}
               onChange={(e) => setFormData({...formData, category: e.target.value})}
-              className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:border-black outline-none"
+              className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 focus:border-black dark:focus:border-white outline-none bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
             >
               <option value="">Select type</option>
               {productTypes.map((type) => (
@@ -140,12 +149,12 @@ export default function AddProductPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Brand *</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Brand *</label>
             <select
               required
               value={formData.brand}
               onChange={(e) => setFormData({...formData, brand: e.target.value})}
-              className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:border-black outline-none"
+              className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 focus:border-black dark:focus:border-white outline-none bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
             >
               <option value="">Select brand</option>
               {brands.map((brand) => (
@@ -157,11 +166,11 @@ export default function AddProductPage() {
 
         <div className="grid grid-cols-2 gap-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Gender</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Gender</label>
             <select
               value={formData.gender}
               onChange={(e) => setFormData({...formData, gender: e.target.value})}
-              className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:border-black outline-none"
+              className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 focus:border-black dark:focus:border-white outline-none bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
             >
               {genders.map((gender) => (
                 <option key={gender} value={gender}>{gender}</option>
@@ -170,70 +179,75 @@ export default function AddProductPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Sizes (comma-separated)</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Sizes (comma-separated)</label>
             <input
               type="text"
               value={formData.sizes}
               onChange={(e) => setFormData({...formData, sizes: e.target.value})}
-              className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:border-black outline-none"
+              className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 focus:border-black dark:focus:border-white outline-none bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
               placeholder="38, 39, 40, 41, 42, 43"
             />
           </div>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Colors (comma-separated)</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Colors (comma-separated)</label>
           <input
             type="text"
             value={formData.colors}
             onChange={(e) => setFormData({...formData, colors: e.target.value})}
-            className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:border-black outline-none"
+            className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 focus:border-black dark:focus:border-white outline-none bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
             placeholder="Black/White, Red/Black, Blue/White"
           />
         </div>
 
         {/* Status Toggles */}
-        <div className="flex items-center space-x-8">
+        <div className="flex flex-wrap gap-6">
           <label className="flex items-center space-x-3">
             <input
               type="checkbox"
               checked={formData.inStock}
               onChange={(e) => setFormData({...formData, inStock: e.target.checked})}
-              className="w-5 h-5 rounded border-gray-300 text-black"
+              className="w-5 h-5 rounded border-gray-300 dark:border-gray-600 text-black focus:ring-black dark:focus:ring-white"
             />
-            <span>In Stock</span>
+            <span className="text-gray-700 dark:text-gray-300">In Stock</span>
           </label>
+
           <label className="flex items-center space-x-3">
             <input
               type="checkbox"
               checked={formData.featured}
               onChange={(e) => setFormData({...formData, featured: e.target.checked})}
-              className="w-5 h-5 rounded border-gray-300 text-black"
+              className="w-5 h-5 rounded border-gray-300 dark:border-gray-600 text-black focus:ring-black dark:focus:ring-white"
             />
-            <span>Featured Product</span>
+            <span className="text-gray-700 dark:text-gray-300">Featured Product</span>
+          </label>
+
+          <label className="flex items-center space-x-3">
+            <input
+              type="checkbox"
+              checked={formData.flashSale}
+              onChange={(e) => setFormData({...formData, flashSale: e.target.checked})}
+              className="w-5 h-5 rounded border-gray-300 dark:border-gray-600 text-black focus:ring-black dark:focus:ring-white"
+            />
+            <span className="text-gray-700 dark:text-gray-300">🔥 Flash Sale</span>
           </label>
         </div>
 
-  {/* ADD THIS NEW CHECKBOX */}
-  <label className="flex items-center space-x-3">
-    <input
-      type="checkbox"
-      checked={formData.flashSale}
-      onChange={(e) => setFormData({...formData, flashSale: e.target.checked})}
-      className="w-5 h-5 rounded border-gray-300 text-black focus:ring-black"
-    />
-    <span className="text-gray-700">🔥 Flash Sale</span>
-  </label>
-  <label className="flex items-center gap-2">
-  <input type="checkbox" name="flashSale" /> 🔥 Flash Sale
-</label>
-
         {/* Buttons */}
         <div className="flex justify-end space-x-4 pt-4">
-          <button type="button" onClick={() => router.back()} className="px-6 py-3 border-2 border-gray-300 rounded-xl font-semibold">
+          <button
+            type="button"
+            onClick={() => router.back()}
+            className="px-6 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-xl font-semibold hover:border-gray-400 dark:hover:border-gray-500 transition"
+          >
             Cancel
           </button>
-          <button type="submit" disabled={loading} className="px-8 py-3 bg-black text-white rounded-xl font-semibold hover:bg-gray-800">
+          <button
+            type="submit"
+            disabled={loading}
+            className="px-8 py-3 bg-black dark:bg-white text-white dark:text-black rounded-xl font-semibold hover:bg-gray-800 dark:hover:bg-gray-200 transition-all duration-300 disabled:opacity-50"
+          >
             {loading ? 'Saving...' : 'Add Product'}
           </button>
         </div>
